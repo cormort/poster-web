@@ -18,6 +18,8 @@ button,select,input{font:inherit;color:inherit}
 #bar>b::before{content:'';display:inline-block;width:14px;height:14px;margin-right:7px;vertical-align:-2px;border-radius:4px;background:linear-gradient(135deg,#ff922b,var(--ac))}
 #bar>button,#bar summary{padding:6px 12px;cursor:pointer;border:1px solid transparent;border-radius:8px;background:var(--soft);transition:background .12s}
 #bar>button:hover,#bar summary:hover{background:#e6e8ef}
+#bar>button:disabled{opacity:.4;cursor:default}
+#bar>button:disabled:hover{background:var(--soft)}
 #bar summary{list-style:none;user-select:none}
 #bar summary::-webkit-details-marker{display:none}
 #bar summary::after{content:'▾';margin-left:5px;color:var(--mut);font-size:11px}
@@ -36,10 +38,19 @@ button,select,input{font:inherit;color:inherit}
 #panel input[type=number]{width:70px}
 #panel select{max-width:160px}
 #panel input[type=range]{flex:1;min-width:0;accent-color:var(--ac2)}
+#panel output{width:40px;text-align:right;font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums;flex:none}
 #panel input[type=color]{width:36px;height:26px;padding:0;border:1px solid var(--bd);border-radius:7px;background:none;cursor:pointer}
 #panel button,.pop button{padding:6px 10px;margin:3px 3px 3px 0;cursor:pointer;border:1px solid var(--bd);border-radius:8px;background:var(--soft)}
 #panel button:hover,.pop button:hover{background:#e6e8ef}
 #panel #del{color:#c92a2a}
+.align{display:flex;gap:3px;margin:6px 0}
+#panel .align button{flex:1;min-width:0;padding:5px 2px;margin:0;font-size:11px;white-space:nowrap}
+/* 情境顯示面板：依未選取／文字／形狀／照片自動隱藏無關欄位 */
+#panel[data-kind=none] .need-sel,#panel:not([data-kind=none]) .empty-tip{display:none}
+#panel[data-kind=text] [data-only]:not([data-only~=text]),
+#panel[data-kind=shape] [data-only]:not([data-only~=shape]),
+#panel[data-kind=photo] [data-only]:not([data-only~=photo]){display:none}
+.empty-tip{font-size:12px;color:var(--mut);line-height:1.5;padding:8px 10px;margin-bottom:10px;background:var(--card);border:1px dashed var(--bd);border-radius:10px}
 /* 格式切換鈕：其實是藏起來的勾選框，所以鍵盤與既有程式都照用 */
 .tgs{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0}
 #panel .tg{display:block;margin:0}
@@ -48,8 +59,11 @@ button,select,input{font:inherit;color:inherit}
 .tg input:checked+span{background:var(--ac2);border-color:var(--ac2);color:#fff}
 .tg input:focus-visible+span{outline:2px solid var(--ac2);outline-offset:1px}
 #lib button{width:36px;height:36px;padding:0;margin:1px;font-size:20px;line-height:1;border-color:transparent;background:none}
-#shapes button{width:72px;height:44px;padding:5px;margin:2px;background:#fff}
+#shapes button{width:54px;height:40px;padding:4px;margin:2px;background:#fff}
 #shapes img{max-width:100%;max-height:100%;vertical-align:middle}
+#shapes h3{font-size:11px;color:var(--mut);margin:8px 0 3px;letter-spacing:.5px}
+#shapes h3:first-child{margin-top:0}
+.pop.wide{width:420px}
 #tpls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 #tpls button{margin:0;padding:5px;font-size:12px;line-height:1.3;background:none}
 #tpls button.wide{grid-column:1/-1}
@@ -74,6 +88,12 @@ small{color:var(--mut);line-height:1.6;display:block;margin-top:6px}
 /* 接縫線黑白雙色並排，深淺底色上都看得到 */
 #grid{position:absolute;inset:0;pointer-events:none;opacity:.75}
 #grid i{position:absolute}
+#guideX,#guideY{position:absolute;display:none;pointer-events:none;z-index:3}
+#guideX{left:50%;top:0;bottom:0;border-left:1.5px dashed #d6336c}
+#guideY{top:50%;left:0;right:0;border-top:1.5px dashed #d6336c}
+#empty{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:20px;pointer-events:none;z-index:1}
+#empty span{background:#ffffffd8;color:#4b5563;font-size:13px;line-height:1.8;padding:12px 18px;border-radius:12px;border:1px dashed #cbd5e1;backdrop-filter:blur(2px)}
+body.dragover #wrap{outline:3px dashed var(--ac2);outline-offset:4px}
 #pal button{width:22px;height:22px;padding:0;margin:1px;border:1px solid #999;border-radius:3px}
 #pal .none,#wrap{background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/12px 12px}
 /* 所有元件用 % 與 cqw 定位，螢幕預覽與實際列印共用同一份 DOM、自動等比 */
@@ -85,8 +105,8 @@ small{color:var(--mut);line-height:1.6;display:block;margin-top:6px}
 .text[data-frame=round]{border-radius:.3em}
 .text[data-frame=pill]{border-radius:99em;padding:.2em .8em}
 .text[data-frame=oval]{border-radius:50%;padding:.5em .9em}
-.text[data-frame=double]{background:none;border:.18em double var(--fc,#ffd43b)}
-.text[data-frame=dashed]{background:none;border:.1em dashed var(--fc,#ffd43b);border-radius:.2em}
+.text[data-frame=double]{background:var(--fg,none);border:.18em double var(--fc,#ffd43b)}
+.text[data-frame=dashed]{background:var(--fg,none);border:.1em dashed var(--fc,#ffd43b);border-radius:.2em}
 .text[data-frame=burst],.text[data-frame=ribbon]{background:none}
 .text[data-frame=burst]{padding:.9em 1.1em}
 .text[data-frame=ribbon]{padding:.2em 1.1em}
@@ -142,6 +162,13 @@ img[data-shape=star]{aspect-ratio:1;clip-path:var(--star)}
 img[data-shape=heart]{aspect-ratio:1.1;clip-path:var(--heart)}
 img[data-shape=burst]{aspect-ratio:1;clip-path:var(--burst)}
 img[data-shape=slant]{clip-path:polygon(14% 0,100% 0,86% 100%,0 100%)}
+img[data-shape=tri]{aspect-ratio:1.15;clip-path:polygon(50% 0,100% 100%,0 100%)}
+img[data-shape=pent]{aspect-ratio:1.05;clip-path:polygon(50% 0,100% 38%,81% 100%,19% 100%,0 38%)}
+img[data-shape=oct]{aspect-ratio:1;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
+img[data-shape=cross]{aspect-ratio:1;clip-path:polygon(34% 0,66% 0,66% 34%,100% 34%,100% 66%,66% 66%,66% 100%,34% 100%,34% 66%,0 66%,0 34%,34% 34%)}
+img[data-shape=chevron]{clip-path:polygon(0 0,80% 0,100% 50%,80% 100%,0 100%,20% 50%)}
+img[data-shape=snip]{clip-path:polygon(0 0,84% 0,100% 18%,100% 100%,0 100%)}
+img[data-shape=shield]{aspect-ratio:.9;clip-path:polygon(0 0,100% 0,100% 56%,50% 100%,0 56%)}
 img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
 #print{display:none}
 @media print{
@@ -154,16 +181,18 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
   .cut{position:absolute;border:.3mm dashed #333}
   .glue{position:absolute;background:#fff6;color:#d6336c;font:2.5mm/1.2 sans-serif;padding:.8mm;overflow:hidden;white-space:nowrap}
   .tag{position:absolute;top:.5mm;font-size:2.5mm;color:#999}
+  .poster,.poster *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 </style>
 
 <div id="bar">
   <b>海報輸出</b>
-  <button id="undo" title="復原（Ctrl/⌘+Z）">↶ 復原</button>
+  <button id="undo" title="復原（Ctrl/⌘+Z）" disabled>↶ 復原</button>
+  <button id="redo" title="重做（Ctrl/⌘+Shift+Z / Ctrl+Y）" disabled>↷ 重做</button>
   <button id="addText">＋文字</button>
   <button onclick="file.click()">＋圖片</button>
   <input id="file" type="file" accept="image/*" multiple hidden>
-  <details><summary>範本</summary><div class="pop">
+  <details><summary>範本</summary><div class="pop wide">
     <div id="tpls"></div>
     <small>更多版型：到 <a href="https://cormort.github.io/ppt-layout-generator/" target="_blank" rel="noopener">圖片排版產生器</a> 做好後匯出 SVG，用「＋圖片」加入再按「鋪滿版面」。<br>
     手繪插圖：到 <a href="https://cormort.github.io/layer-paint/" target="_blank" rel="noopener">layer-paint</a> 畫好匯出 PNG，加入後勾「去白底」。</small>
@@ -172,9 +201,9 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
     <div id="lib"></div>
     <small>點一下加入；★ ● 這類符號可以改顏色。</small>
   </div></details>
-  <details><summary>形狀</summary><div class="pop">
+  <details><summary>形狀</summary><div class="pop wide">
     <div id="shapes"></div>
-    <small>線條、箭號、外框與色塊：加入後可改顏色、大小、旋轉。</small>
+    <small>線條、幾何、箭號、星形與圖說：加入後可改顏色／漸層、大小、旋轉與變形。</small>
   </div></details>
   <details><summary>專案</summary><div class="pop">
     <button id="export">匯出專案檔</button>
@@ -195,16 +224,25 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
 </div>
 
 <div id="main">
-<div id="stage"><div id="wrap"><div id="poster" class="poster"></div><div id="grid"></div><div id="selbox"><i data-h="rot" title="旋轉（Shift 每 15°）"></i><i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i></div></div></div>
-<div id="panel">
+<div id="stage"><div id="wrap"><div id="poster" class="poster"></div><div id="empty"><span>從上方選「範本」快速開始<br>或點「＋文字」「＋圖片」「形狀」<br>也可直接拖放或 Ctrl/⌘+V 貼上圖片</span></div><div id="grid"></div><div id="guideX"></div><div id="guideY"></div><div id="selbox"><i data-h="rot" title="旋轉（Shift 每 15°）"></i><i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i></div></div></div>
+<div id="panel" data-kind="none">
   <div id="warn"></div>
-  <section>
+  <div class="empty-tip">點選畫布上的物件即可編輯樣式與變形；未選取時可直接調整海報底色與版面。</div>
+  <section class="need-sel">
   <h2>選取的物件</h2>
   <fieldset id="props" disabled>
-    <label>大小 <input id="size" type="range" min="1" max="100" step="0.5"></label>
-    <label>旋轉 <input id="rot" type="range" min="-180" max="180" step="1"></label>
-    <label>不透明度 <input id="op" type="range" min="10" max="100" step="5"></label>
-    <label>字型 <select id="font">
+    <label>大小 <input id="size" type="range" min="1" max="100" step="0.5"><output></output></label>
+    <label>旋轉 <input id="rot" type="range" min="-180" max="180" step="1" data-u="°"><output></output></label>
+    <label>不透明度 <input id="op" type="range" min="10" max="100" step="5" data-u="%"><output></output></label>
+    <div class="align" title="對齊海報版面">
+      <button data-al="l" title="靠左對齊">⇤左</button>
+      <button data-al="cx" title="水平置中">⬌中</button>
+      <button data-al="r" title="靠右對齊">⇥右</button>
+      <button data-al="t" title="靠上對齊">⤒上</button>
+      <button data-al="cy" title="垂直置中">⬍中</button>
+      <button data-al="b" title="靠下對齊">⤓下</button>
+    </div>
+    <label data-only="text">字型 <select id="font">
       <option value='system-ui,"PingFang TC","Microsoft JhengHei",sans-serif'>黑體
       <option value='"Songti TC","PMingLiU",serif'>明體
       <option value='"Kaiti TC","BiauKai","DFKai-SB",serif'>楷體
@@ -213,12 +251,12 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
       <option value='"Noto Serif TC",serif'>思源宋體
       <option value='"LXGW WenKai TC","Kaiti TC",serif'>霞鶩文楷
       <option value='"Huninn","Yuanti TC",sans-serif'>粉圓體
-      <option value='"Iansui","Kaiti TC",serif'>芫荽手寫
+      <option value='"Iansui","Kaiti TC",sans-serif'>芫荽手寫
       <option value='"Dela Gothic One","Noto Sans TC",sans-serif'>超粗標題（日系，少數字缺）
       <option value='"Potta One","Noto Sans TC",sans-serif'>毛筆 POP（日系，少數字缺）
       <option value='"Rampart One","Noto Sans TC",sans-serif'>立體空心（日系，少數字缺）
     </select></label>
-    <div class="tgs">
+    <div class="tgs" data-only="text">
       <label class="tg" title="粗體"><input id="bold" type="checkbox"><span><b>B</b></span></label>
       <label class="tg" title="斜體"><input id="ital" type="checkbox"><span><i>I</i></span></label>
       <label class="tg" title="底線"><input id="under" type="checkbox"><span><u>U</u></span></label>
@@ -226,38 +264,40 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
       <label class="tg" title="直書"><input id="vert" type="checkbox"><span>直書</span></label>
       <label class="tg" title="白色外框"><input id="stroke" type="checkbox"><span>白框</span></label>
     </div>
-    <label>文字框 <select id="frame">
+    <label data-only="text">文字框 <select id="frame">
       <option value="">無<option value="box">色塊<option value="round">圓角<option value="pill">膠囊<option value="oval">橢圓
       <option value="burst">爆炸<option value="bubble">對話框<option value="ribbon">緞帶<option value="double">雙線框<option value="dashed">虛線框
     </select></label>
-    <label>圖片形狀 <select id="shape">
+    <label data-only="photo">圖片形狀 <select id="shape">
       <option value="">無<option value="round">圓角<option value="circle">圓形<option value="oval">橢圓<option value="arch">拱門<option value="leaf">葉形<option value="blob">水滴
       <option value="diamond">菱形<option value="hex">六邊形<option value="star">星形<option value="heart">愛心<option value="burst">爆炸<option value="slant">斜切
+      <option value="tri">三角形<option value="pent">五邊形<option value="oct">八邊形<option value="cross">十字<option value="chevron">箭頭<option value="snip">切角<option value="shield">盾牌
     </select></label>
-    <div class="tgs">
+    <div class="tgs" data-only="photo">
       <label class="tg" title="圖片加白邊與陰影"><input id="edge" type="checkbox"><span>白邊</span></label>
       <label class="tg" title="讓圖片的白色背景消失"><input id="mul" type="checkbox"><span>去白底</span></label>
     </div>
-    <label>形狀運算 <span><button id="union" title="兩個形狀合成一個">聯集</button><button id="inter" title="只留下重疊的部分">交集</button><button id="sub" title="從第一個形狀挖掉第二個">減去</button></span></label>
-    <button id="fill">鋪滿版面</button><button id="front">移到最上</button><button id="back">移到最下</button><button id="del">刪除</button>
+    <label data-only="shape">形狀運算 <span><button id="union" title="兩個形狀合成一個">聯集</button><button id="inter" title="只留下重疊的部分">交集</button><button id="sub" title="從第一個形狀挖掉第二個">減去</button></span></label>
+    <button id="fill" data-only="photo">鋪滿版面</button><button id="dup" title="複製物件（Ctrl/⌘+D）">複製</button><button id="up1" title="上移一層">上移</button><button id="dn1" title="下移一層">下移</button><button id="front">置頂</button><button id="back">置底</button><button id="del">刪除</button>
+    <small>快捷鍵：方向鍵微移（Shift 加速）、Ctrl/⌘+D 複製、Delete 刪除。</small>
   </fieldset>
   </section>
 
-  <section>
+  <section class="need-sel">
   <h2>變形</h2>
   <fieldset id="tfs" disabled>
-    <label>寬度 % <input id="sx" type="range" min="10" max="300" step="1"></label>
-    <label>高度 % <input id="sy" type="range" min="10" max="300" step="1"></label>
-    <label>水平傾斜 <input id="kx" type="range" min="-60" max="60" step="1"></label>
-    <label>垂直傾斜 <input id="ky" type="range" min="-60" max="60" step="1"></label>
-    <label>上下透視 <input id="px" type="range" min="-70" max="70" step="1"></label>
-    <label>左右透視 <input id="py" type="range" min="-70" max="70" step="1"></label>
+    <label>寬度 % <input id="sx" type="range" min="10" max="300" step="1" data-u="%"><output></output></label>
+    <label>高度 % <input id="sy" type="range" min="10" max="300" step="1" data-u="%"><output></output></label>
+    <label>水平傾斜 <input id="kx" type="range" min="-60" max="60" step="1" data-u="°"><output></output></label>
+    <label>垂直傾斜 <input id="ky" type="range" min="-60" max="60" step="1" data-u="°"><output></output></label>
+    <label>上下透視 <input id="px" type="range" min="-70" max="70" step="1" data-u="°"><output></output></label>
+    <label>左右透視 <input id="py" type="range" min="-70" max="70" step="1" data-u="°"><output></output></label>
     <button id="flipH">⇋ 水平翻轉</button><button id="flipV">⇵ 垂直翻轉</button><button id="tfreset">重設變形</button>
-    <label>文字彎曲 <select id="warp">
+    <label data-only="text">文字彎曲 <select id="warp">
       <option value="">無<option value="arcUp">弧形 ⌒<option value="arcDown">弧形 ⌣<option value="circle">圓形
       <option value="wave">波浪<option value="wave2">雙波浪<option value="bulge">膨脹<option value="pinch">挾縮<option value="grow">漸大<option value="shrink">漸小
     </select></label>
-    <label>彎曲強度 <input id="wa" type="range" min="0" max="100" step="1"></label>
+    <label data-only="text">彎曲強度 <input id="wa" type="range" min="0" max="100" step="1" data-u="%"><output></output></label>
     <small>拖曳選取框：四角＝等比縮放，四邊＝拉伸變形，上方圓點＝旋轉（按住 Shift 每 15° 對齊）。</small>
   </fieldset>
   </section>
@@ -265,7 +305,14 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
   <section id="colsec">
   <h2>顏色</h2>
   <label>套用到 <select id="ptarget"><option value="text">文字／形狀<option value="frame">文字框<option value="bg">底色</select></label>
-  <label>填色 <select id="ftype"><option value="solid">純色<option value="linear">線性漸層<option value="radial">放射漸層<option value="two">雙色（硬切）<option value="three">三色漸層<option value="rainbow">彩虹</select></label>
+  <label>填色 <select id="ftype"><option value="solid">純色<option value="linear">線性漸層<option value="radial">放射漸層<option value="two">雙色（硬切）<option value="three">三色漸層<option value="rainbow">彩虹<option value="image">圖片</select></label>
+  <div class="stops" data-show="image">
+    <img id="imgpre" width="28" height="28" style="object-fit:cover;border-radius:5px;border:1px solid var(--bd)" hidden alt="預覽">
+    <button id="pickImg" type="button">選擇圖片…</button>
+    <select id="fimgm" aria-label="圖片顯示方式"><option value="cover">填滿<option value="tile">重複平鋪</select>
+    <button id="clearImg" type="button" title="移除圖片改回純色">清除</button>
+    <input id="fimgpick" type="file" accept="image/*" hidden>
+  </div>
   <div class="stops">
     <span data-show="solid linear radial two three">顏色1 <input id="c1" type="color" value="#e03131"></span>
     <span data-show="three">中間 <input id="c3" type="color" value="#ffd43b"></span>
@@ -273,10 +320,14 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
     <button id="swap" data-show="linear radial two three" title="對調顏色1、顏色2">⇄</button>
   </div>
   <label data-show="solid linear radial two three">色碼 <input id="hex" type="text" maxlength="7" spellcheck="false" placeholder="#rrggbb"></label>
-  <label data-show="linear two three rainbow">角度 <input id="fang" type="range" min="0" max="360" step="5"></label>
-  <label data-show="linear radial two three">位置 <input id="fmid" type="range" min="0" max="100" step="1"></label>
+  <label data-show="linear two three rainbow">角度 <input id="fang" type="range" min="0" max="360" step="5" data-u="°"><output></output></label>
+  <label data-show="linear radial two three">位置 <input id="fmid" type="range" min="0" max="100" step="1" data-u="%"><output></output></label>
   <div id="gpre"></div>
-  <label>色票 <select id="pn"><option>12<option>24<option>36</select></label>
+  <label>色票 <select id="pn">
+    <option value="12">經典 12 色<option value="24">經典 24 色<option value="36">經典 36 色
+    <option value="morandi">莫蘭迪色系<option value="pastel">馬卡龍粉彩<option value="retro">復古撞色
+    <option value="neon">賽博霓虹<option value="forest">大地森林<option value="tea">和風茶韻<option value="mono">黑白灰階
+  </select></label>
   <div id="pal"></div>
   <small>色票會套到外框標示的那個顏色（點一下顏色1／中間／顏色2 切換）。</small>
   </section>
@@ -292,6 +343,8 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
   <label>底色 <input id="bgpick" type="color" value="#fff3bf"></label>
   <input id="bg" type="hidden" value="#fff3bf">
   <input id="bgfill" type="hidden" value="">
+  <input id="bgimg" type="hidden" value="">
+  <input id="bgimgm" type="hidden" value="cover">
   </section>
 </div>
 </div>
@@ -299,7 +352,34 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
 
 <script>
 const $ = id => document.getElementById(id);
-const poster = $('poster'), KEYS = ['orient', 'cols', 'rows', 'margin', 'bg', 'paper', 'overlap', 'bgfill'];
+const poster = $('poster'), KEYS = ['orient', 'cols', 'rows', 'margin', 'bg', 'paper', 'overlap', 'bgfill', 'bgimg', 'bgimgm'];
+const IMG_URI = /^data:image\/(png|jpe?g|gif|webp|avif|svg\+xml)[;,]/i;
+function safeImg(u) {
+  return typeof u === 'string' && IMG_URI.test(u)
+    ? u.replace(/["'()\\\r\n]/g, c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')) : '';
+}
+const imgUrlCss = u => `url("${safeImg(u)}")`;
+const imgBgCss = (u, m) => m === 'tile' ? `${imgUrlCss(u)} 0 0/33.33% auto repeat` : `${imgUrlCss(u)} center/cover no-repeat`;
+function readImgUrl(file, cb) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const u = r.result;
+    if (file.type === 'image/svg+xml' || file.size <= 80000) return cb(u);
+    const im = new Image();
+    im.onload = () => {
+      const m = Math.max(im.naturalWidth, im.naturalHeight, 1), k = Math.min(1, 800 / m);
+      const c = document.createElement('canvas');
+      c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      const out = c.toDataURL('image/webp', .86);
+      cb(out.startsWith('data:image/webp') ? out : c.toDataURL('image/png'));
+    };
+    im.onerror = () => cb(u);
+    im.src = u;
+  };
+  r.readAsDataURL(file);
+}
 const PAPER = { A4: [210, 297], A3: [297, 420] };
 let sel = null;
 
@@ -326,9 +406,10 @@ function render() {
   // 底色可能來自匯入的專案檔：只接受 #rrggbb 或 transparent
   const b = $('bg').value;
   if (/^#[0-9a-f]{6}$/i.test(b)) $('bgpick').value = b; else $('bg').value = 'transparent';
-  const bf = parseFill($('bgfill').value);
+  const bi = safeImg($('bgimg').value), bf = parseFill($('bgfill').value);
+  if (!bi) $('bgimg').value = '';
   if (!bf) $('bgfill').value = '';
-  poster.style.background = bf && bf.t !== 'solid' ? fillCss(bf) : $('bg').value;
+  poster.style.background = bi ? `${imgBgCss(bi, $('bgimgm').value)} ${$('bg').value}` : bf && bf.t !== 'solid' ? fillCss(bf) : $('bg').value;
   if ($('ptarget').value === 'bg') loadFillUI();
   let g = '';
   for (let c = 1; c < L.cols; c++) g += `<i style="left:${c * L.sx / L.W * 100}%;top:0;bottom:0;width:3px;background:linear-gradient(to right,#000 1px,#fff 1px)"></i>`;
@@ -342,12 +423,17 @@ function render() {
 function data() {
   const v = {};
   for (const k of KEYS) v[k] = $(k).value;
-  return JSON.stringify({ v, html: poster.innerHTML });
+  // 彎曲字、漸層字的每個字都是 span（圖片填色時每個 span 還各帶一份圖），load 會從 data-* 重畫，所以只存純文字
+  const c = poster.cloneNode(true);
+  for (const t of c.querySelectorAll('.text')) if (t.childElementCount) t.textContent = t.textContent;
+  return JSON.stringify({ v, html: c.innerHTML });
 }
 
 // 專案檔可能來自別人：不直接塞 innerHTML，只照白名單重建文字與 data: 圖片，事件屬性與 script 一律丟掉
 function load(d) {
   $('bgfill').value = '';   // 舊專案檔沒有這一欄，不能沿用上一份的漸層底色
+  $('bgimg').value = '';
+  $('bgimgm').value = 'cover';
   for (const k of KEYS) if (d.v?.[k] != null) $(k).value = d.v[k];
   poster.innerHTML = '';
   for (const s of new DOMParser().parseFromString(String(d.html || ''), 'text/html').body.children) {
@@ -356,10 +442,15 @@ function load(d) {
     const el = img ? new Image() : document.createElement('div');
     if (img) { el.src = src; el.draggable = false; } else el.textContent = s.textContent;
     el.className = img ? 'el' : 'el text';
-    el.style.cssText = s.style.cssText.replace(/url\(/gi, '');
-    for (const k of ['color', 'font', 'frame', 'fc', 'shape', 'edge', 'art', 'body', 'vb', 'fill', 'ff', 'warp', 'wa', ...Object.keys(TF)]) if (s.dataset[k]) el.dataset[k] = s.dataset[k];
+    el.style.cssText = s.style.cssText;
+    for (const k of [...el.style]) if (/url\(|image(-set)?\(|src\(|cross-fade\(|element\(/i.test(el.style.getPropertyValue(k))) el.style.removeProperty(k);
+    for (const k of ['color', 'font', 'frame', 'fc', 'shape', 'edge', 'art', 'body', 'vb', 'fill', 'ff', 'fimg', 'fimgm', 'ffimg', 'ffimgm', 'warp', 'wa', ...Object.keys(TF)]) if (s.dataset[k]) el.dataset[k] = s.dataset[k];
+    for (const k of ['fimg', 'ffimg']) if (el.dataset[k] && !safeImg(el.dataset[k])) { delete el.dataset[k]; delete el.dataset[k + 'm']; }
     poster.append(el);
-    if (!img) paintText(el);   // 彎曲字與漸層字的 span 不存，從 data-* 重畫
+    if (!img) {
+      if (el.dataset.ffimg) el.style.setProperty('--fg', imgBgCss(el.dataset.ffimg, el.dataset.ffimgm));
+      paintText(el);   // 彎曲字與漸層字的 span 不存，從 data-* 重畫
+    } else if (artOf(el) && el.dataset.fimg) refreshArt(el);
   }
   select(null);
 }
@@ -386,27 +477,62 @@ function mark() {
   b.style.cssText = `display:block;left:${cx - w / 2}px;top:${cy - h / 2}px;width:${w}px;height:${h}px;rotate:${sel.style.rotate || '0deg'};transform:skewX(${v('kx')}deg) skewY(${v('ky')}deg)`;
 }
 
-// ponytail: 復原存的是整份快照（最多 40 步），海報很大時吃記憶體；真的卡再改成只存差異
-let hist = [], cur = null, restoring = false, lastPush = 0;
-function save() {
-  mark();
+function syncVals() {
+  for (const r of $('panel').querySelectorAll('input[type=range]')) {
+    const o = r.nextElementSibling;
+    if (o?.tagName === 'OUTPUT') o.textContent = r.value + (r.dataset.u || (r.id === 'size' && sel?.tagName === 'IMG' ? '%' : ''));
+  }
+}
+$('panel').addEventListener('input', syncVals);
+
+// ponytail: 復原／重做存的是整份快照（最多 40 步），海報很大時吃記憶體；真的卡再改成只存差異
+let hist = [], redoHist = [], cur = null, timer = 0;
+function syncHist() {
+  $('undo').disabled = !hist.length;
+  $('redo').disabled = !redoHist.length;
+}
+// 真正的存檔（序列化＋寫入＋記一步復原）。restored＝這次變動來自復原／重做本身，不記步、不清重做
+function commit(restored) {
+  clearTimeout(timer);
+  timer = 0;
   const d = data();
   if (d !== cur) {
-    // 拖滑桿會連續觸發，0.5 秒內的變動併成一步
-    if (cur !== null && !restoring && Date.now() - lastPush > 500) { hist.push(cur); lastPush = Date.now(); if (hist.length > 40) hist.shift(); }
+    if (!restored) {
+      if (cur !== null) { hist.push(cur); if (hist.length > 40) hist.shift(); }
+      redoHist.length = 0;
+    }
     cur = d;
   }
+  syncHist();
   try { localStorage.poster = d; $('warn').textContent = ''; }
   catch { $('warn').textContent = '⚠ 無法自動存檔（內容太大，或瀏覽器停用了儲存）'; }
 }
+// 拖滑桿、拖物件會連續呼叫：畫面立刻更新，存檔等停手 0.4 秒才做，整段操作合成一步復原
+function save() {
+  mark();
+  $('empty').style.display = poster.children.length ? 'none' : 'grid';
+  clearTimeout(timer);
+  timer = setTimeout(commit, 400);
+}
+addEventListener('pagehide', () => { if (timer) commit(); });
 
 function select(el) {
+  const changed = sel !== el;
   sel = el;
   $('props').disabled = $('tfs').disabled = !el;
+  const kind = !el ? 'none' : el.classList.contains('text') ? 'text' : artOf(el) ? 'shape' : 'photo';
+  $('panel').dataset.kind = kind;
+  const pt = $('ptarget');
+  pt.options[0].hidden = pt.options[0].disabled = kind === 'none' || kind === 'photo';
+  pt.options[1].hidden = pt.options[1].disabled = kind !== 'text';
+  if (kind === 'none' || kind === 'photo') pt.value = 'bg';
+  else if ((changed && pt.value === 'bg') || (kind === 'shape' && pt.value === 'frame')) pt.value = 'text';
   mark();
   loadFillUI();
   if (!el) return;
-  $('size').value = parseFloat(el.style.fontSize || el.style.width);
+  const sz = parseFloat(el.style.fontSize || el.style.width) || 10;
+  $('size').max = Math.max(100, Math.ceil(sz));   // 用控制點放大超過 100 時，滑桿不能把它壓回 100
+  $('size').value = sz;
   $('font').value = el.dataset.font || $('font').options[0].value;
   $('bold').checked = +el.style.fontWeight >= 700;
   $('vert').checked = !!el.style.writingMode;
@@ -425,6 +551,7 @@ function select(el) {
   $('sy').value = Math.abs(tfv(el, 'sy')) * 100;
   $('warp').value = el.dataset.warp || '';
   $('wa').value = el.dataset.wa ?? 50;
+  syncVals();
 }
 
 function add(el) {
@@ -456,8 +583,8 @@ for (const g of '★ ● ■ ▲ ♥ ✹ ✿ ➜ 🎉 🎊 🎈 🎁 🔥 💥 �
 // 文字：[內容, top%, 字級cqw, 顏色, {stroke 白框, rot 旋轉角度, left 靠左位置%, vert 直書}]，沒給 left 就水平置中（全形字寬 1em、半形約 .55em）
 const STROKE = '-webkit-text-stroke:.12em #fff;paint-order:stroke fill;';
 const line = ([s, top, size, color, o = {}]) => {
-  const w = [...s].reduce((a, c) => a + (c.charCodeAt(0) < 256 ? .55 : 1), 0) * size;
-  return `<div class="el text" data-color="${color}" data-font='"Noto Sans TC",sans-serif' style="font-family:'Noto Sans TC',sans-serif;left:${o.left ?? (100 - w) / 2}%;top:${top}%;font-size:${size}cqw;color:${color};font-weight:900;${o.stroke ? STROKE : ''}${o.rot ? `rotate:${o.rot}deg;` : ''}${o.vert ? 'writing-mode:vertical-rl;' : ''}">${s}</div>`;
+  const w = [...s].reduce((a, c) => a + (c.charCodeAt(0) < 256 ? .55 : 1), 0) * size, font = o.font || '"Noto Sans TC",sans-serif';
+  return `<div class="el text" data-color="${color}" data-font='${font}'${o.fill ? ` data-fill="${o.fill}"` : ''}${o.warp ? ` data-warp="${o.warp}" data-wa="${o.wa ?? 40}"` : ''} style="font-family:${font.replaceAll('"', "'")};left:${o.left ?? (100 - w) / 2}%;top:${top}%;font-size:${size}cqw;color:${color};font-weight:900;${o.stroke ? STROKE : ''}${o.rot ? `rotate:${o.rot}deg;` : ''}${o.vert ? 'writing-mode:vertical-rl;' : ''}">${s}</div>`;
 };
 const art = (body, w = 400, h = 574) => `<img class="el" draggable="false" style="left:0%;top:0%;width:100%;height:100%;object-fit:cover" src="data:image/svg+xml,${
   encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`)}">`;
@@ -574,6 +701,60 @@ const TPLS = {
       <rect width="90" height="200" fill="url(#d)"/><rect x="1030" width="90" height="200" fill="url(#d)"/>
       <path d="M110 22H1010M110 178H1010" stroke="#fde047" stroke-width="4"/>`, 1120, 200),
     [['熱烈歡迎貴賓蒞臨指導', 21, 7.6, '#fde047']]],
+  '質感展覽': [['p', 2, 2, 5, '#ede4d8'],
+    art(`<rect width="400" height="574" fill="#ede4d8"/>
+      <path d="M48 530V180A152 152 0 0 1 352 180V530Z" fill="#d6c5b3"/>
+      <path d="M68 516V186A132 132 0 0 1 332 186V516Z" fill="none" stroke="#8c6d53" stroke-width="2"/>
+      <circle cx="200" cy="148" r="46" fill="#a4694f" opacity=".88"/><path d="M48 530H352" stroke="#5c4636" stroke-width="3"/>`),
+    [['2026 AUTUMN EXHIBITION', 6, 3.8, '#5c4636'],
+     ['光影之間', 26, 13, '#3b2c22', { font: '"Noto Serif TC",serif', vert: 1, left: 43.5 }],
+     ['當代器物與空間創作展', 66, 6, '#3b2c22', { font: '"Noto Serif TC",serif' }],
+     ['10.15 – 11.30｜10:00–18:00', 76, 4.4, '#5c4636'],
+     ['市立美術館 B1 展覽室・免費參觀', 83, 4.2, '#8c6d53']]],
+  '夜市美食': [['p', 2, 2, 5, '#3b1d0e'],
+    art(`<defs>${grad('g', '#7c2d12', '#291005', 1)}${dots('d', '#fbbf24', 18, 2.5)}</defs>${BG}
+      <circle cx="200" cy="240" r="175" fill="#fb923c" opacity=".18"/><circle cx="200" cy="240" r="142" fill="#f59e0b"/>
+      <circle cx="200" cy="240" r="128" fill="none" stroke="#fff7ed" stroke-width="4" stroke-dasharray="10 8"/>
+      <rect x="44" y="428" width="312" height="96" rx="16" fill="#fff7ed"/><rect x="330" y="34" width="54" height="54" rx="27" fill="#ef4444"/>`),
+    [['招牌必吃', 7, 11, '#fde047'], ['HOT', 7.4, 4.2, '#ffffff', { left: 84.8 }], ['現烤脆皮雞排', 22, 11.5, '#3b1d0e', { warp: 'arcUp', wa: 22 }],
+     ['$75', 38, 24, '#b91c1c'], ['每日限量・外酥內嫩', 58, 5, '#3b1d0e'],
+     ['加購飲品現折 10 元', 77, 6.5, '#9a3412'], ['辣度：大辣 / 中辣 / 小辣 / 不辣', 85.5, 4, '#7c2d12']]],
+  '緊急公告': [['p', 2, 2, 5, '#facc15'],
+    art(`<defs><pattern id="h" width="32" height="32" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="16" height="32" fill="#111827"/><rect x="16" width="16" height="32" fill="#facc15"/></pattern></defs>
+      <rect width="400" height="574" fill="url(#h)"/><rect x="24" y="24" width="352" height="526" fill="#fff" stroke="#111827" stroke-width="8"/>
+      <rect x="44" y="44" width="312" height="104" fill="#dc2626"/><path d="M54 452H346" stroke="#111827" stroke-width="4"/>`),
+    [['重要公告', 10.5, 16, '#ffffff'],
+     ['施工期間　請勿進入', 33, 8.5, '#111827'],
+     ['日期：11月18日（三）', 48, 6.5, '#dc2626'],
+     ['時間：09:00 – 17:00', 57, 6.5, '#dc2626'],
+     ['為維護通行安全，本通道暫時封閉', 68, 4.6, '#374151'],
+     ['造成不便・敬請見諒', 82.5, 6.8, '#111827']]],
+  '霓虹派對': [['p', 2, 2, 5, '#09061a'],
+    art(`<defs>${grad('g', '#1e0b4b', '#050314', 1)}</defs>${BG}
+      <circle cx="200" cy="240" r="158" fill="none" stroke="#f0abfc" stroke-width="6" opacity=".65"/>
+      <circle cx="200" cy="240" r="142" fill="none" stroke="#22d3ee" stroke-width="4" opacity=".8"/>
+      <path d="M0 440L400 370V574H0Z" fill="#ec4899" opacity=".18"/><path d="M0 490L400 440V574H0Z" fill="#22d3ee" opacity=".16"/>`),
+    [['LIVE MUSIC NIGHT', 9, 5.2, '#22d3ee'],
+     ['星夜派對', 27, 17, '#ffffff', { fill: 'linear|90|50|#fc00ff|#00dbde|#ffffff', rot: -6 }],
+     ['熱音社年度成果發表', 52, 7.2, '#fde047', { rot: -4 }],
+     ['12/20 FRI  18:30 OPEN', 72, 6.8, '#f0abfc'],
+     ['活動中心大禮堂・憑學生證入場', 84, 4.6, '#cbd5e1']]],
+  '文創市集': [['p', 2, 2, 5, '#eef3ec'],
+    art(`<rect width="400" height="574" fill="#eef3ec"/>
+      <circle cx="50" cy="60" r="110" fill="#a3b18a" opacity=".45"/><circle cx="360" cy="510" r="140" fill="#dad7cd"/>
+      <rect x="36" y="130" width="328" height="340" rx="28" fill="#ffffff" stroke="#588157" stroke-width="4"/>
+      <circle cx="200" cy="130" r="36" fill="#bc6c25"/><path d="M90 326H310" stroke="#a3b18a" stroke-width="2"/>`),
+    [['✿', 18.5, 8, '#ffffff'],
+     ['森林手作市集', 31, 11, '#344e41', { font: '"LXGW WenKai TC","Kaiti TC",serif' }],
+     ['木作 × 陶藝 × 植栽 × 咖啡', 45, 4.6, '#588157'],
+     ['每週六、日 11:00–17:30', 61, 5.2, '#bc6c25'],
+     ['中央公園草坪廣場', 69, 5.5, '#344e41'],
+     ['歡迎自備環保袋・免費入場', 86, 4.6, '#588157']]],
+  '慶典橫幅': [['l', 4, 1, 5, '#1d4ed8'],
+    art(`<defs>${grad('g', '#1e3a8a', '#0ea5e9')}</defs>${BG}
+      <path d="M0 0H210L150 200H0Z" fill="#facc15"/><path d="M1120 0H910L970 200H1120Z" fill="#facc15"/>
+      <path d="M230 22H890M230 178H890" stroke="#fde047" stroke-width="4"/>`, 1120, 200),
+    [['熱烈慶祝　活動圓滿成功', 21, 6.8, '#ffffff']]],
 };
 for (const name in TPLS) {
   const b = document.createElement('button');
@@ -587,28 +768,61 @@ for (const name in TPLS) {
     if (poster.children.length && !confirm('套用範本會取代目前內容，確定？')) return;
     const [v, bgArt, lines] = TPLS[name];
     KEYS.forEach((k, i) => $(k).value = v[i] ?? $(k).value);   // 範本沒指定的（紙張、重疊）維持現狀
-    $('bgfill').value = '';
+    $('bgfill').value = $('bgimg').value = '';
+    $('bgimgm').value = 'cover';
     poster.innerHTML = bgArt + lines.map(line).join('');
     select(null);
     render();
+    poster.querySelectorAll('.text').forEach(paintText);
+    save();
   };
   $('tpls').append(b);
 }
 
+function addImageFile(f, pos) {
+  readImgUrl(f, u => {
+    const img = new Image();
+    img.src = u;
+    img.draggable = false;
+    img.style.width = '40%';
+    add(img);
+    if (pos) {
+      img.onload = () => {
+        const P = poster.getBoundingClientRect();
+        img.style.left = clamp((pos.x - P.left) / P.width * 100 - 20, 0, 85) + '%';
+        img.style.top = clamp((pos.y - P.top) / P.height * 100 - img.offsetHeight / P.height * 50, 0, 85) + '%';
+        mark();
+        save();
+      };
+    }
+  });
+}
 $('file').onchange = e => {
-  for (const f of e.target.files) {
-    const r = new FileReader();
-    r.onload = () => {
-      const img = new Image();
-      img.src = r.result;
-      img.draggable = false;
-      img.style.width = '40%';
-      add(img);
-    };
-    r.readAsDataURL(f);
-  }
+  for (const f of e.target.files) addImageFile(f);
   e.target.value = '';
 };
+
+const stage = $('stage');
+stage.addEventListener('pointerdown', e => { if (!e.target.closest('.el, #selbox')) select(null); });
+stage.addEventListener('dragover', e => {
+  if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); document.body.classList.add('dragover'); }
+});
+stage.addEventListener('dragleave', e => { if (!stage.contains(e.relatedTarget)) document.body.classList.remove('dragover'); });
+stage.addEventListener('drop', e => {
+  document.body.classList.remove('dragover');
+  const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith('image/'));
+  if (!files.length) return;
+  e.preventDefault();
+  const P = poster.getBoundingClientRect(), inside = e.clientX >= P.left && e.clientX <= P.right && e.clientY >= P.top && e.clientY <= P.bottom;
+  files.forEach((f, i) => addImageFile(f, inside && i === 0 ? { x: e.clientX, y: e.clientY } : null));
+});
+addEventListener('paste', e => {
+  if (sel?.isContentEditable || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  const files = [...(e.clipboardData?.items || [])].filter(it => it.type.startsWith('image/')).map(it => it.getAsFile()).filter(Boolean);
+  if (!files.length) return;
+  e.preventDefault();
+  files.forEach(f => addImageFile(f));
+});
 
 poster.addEventListener('pointerdown', e => {
   const el = e.target.closest('.el');
@@ -624,14 +838,29 @@ poster.addEventListener('pointerdown', e => {
   e.preventDefault();
   const r = poster.getBoundingClientRect(), x0 = e.clientX, y0 = e.clientY;
   const l0 = parseFloat(el.style.left), t0 = parseFloat(el.style.top);
+  const gx = $('guideX'), gy = $('guideY');
   const move = ev => {
     el.style.left = l0 + (ev.clientX - x0) / r.width * 100 + '%';
     el.style.top = t0 + (ev.clientY - y0) / r.height * 100 + '%';
+    const b = el.getBoundingClientRect();
+    const dx = (r.left + r.width / 2) - (b.left + b.width / 2), dy = (r.top + r.height / 2) - (b.top + b.height / 2);
+    const sx = Math.abs(dx) < 6, sy = Math.abs(dy) < 6;
+    if (sx) el.style.left = parseFloat(el.style.left) + dx / r.width * 100 + '%';
+    if (sy) el.style.top = parseFloat(el.style.top) + dy / r.height * 100 + '%';
+    gx.style.display = sx ? 'block' : 'none';
+    gy.style.display = sy ? 'block' : 'none';
     mark();
   };
-  const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); save(); };
+  const up = () => {
+    gx.style.display = gy.style.display = 'none';
+    removeEventListener('pointermove', move);
+    removeEventListener('pointerup', up);
+    removeEventListener('pointercancel', up);
+    save();
+  };
   addEventListener('pointermove', move);
   addEventListener('pointerup', up);
+  addEventListener('pointercancel', up);   // 觸控被系統手勢打斷時不會有 pointerup
 });
 
 poster.addEventListener('dblclick', e => {
@@ -660,54 +889,139 @@ prop('size', (el, i) => {
 });
 // 鋪滿：圖片蓋滿整張海報並墊到最底，比例不同時裁掉多的邊（不變形）
 $('fill').onclick = () => {
-  if (sel.tagName !== 'IMG') return;
+  if (sel.tagName !== 'IMG' || artOf(sel)) return;   // 形狀被拉成整版會跟運算用的幾何對不上
   sel.style.cssText += ';left:0%;top:0%;width:100%;height:100%;object-fit:cover';
   poster.prepend(sel);
   save();
 };
 // 形狀是內嵌 SVG 圖片，換色＝用新顏色重畫一張；文字則直接改 color
+const polyPath = pts => `M${pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join('L')}Z`;
+const regPoly = (n, r = 96, cx = 100, cy = 100, rot = -Math.PI / 2) =>
+  polyPath([...Array(n)].map((_, i) => { const a = rot + i * 2 * Math.PI / n; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }));
+const starPath = (n, r1, r2, cx = 100, cy = 100, rot = -Math.PI / 2) =>
+  polyPath([...Array(n * 2)].map((_, i) => { const a = rot + i * Math.PI / n, r = i % 2 ? r2 : r1; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }));
 const ARTS = {
-  line:   [200, 40, c => `<path d="M6 20H194" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`],
-  thick:  [200, 40, c => `<path d="M10 20H190" stroke="${c}" stroke-width="16" stroke-linecap="round"/>`],
-  dash:   [200, 40, c => `<path d="M6 20H194" stroke="${c}" stroke-width="6" stroke-dasharray="20 14"/>`],
-  dots:   [200, 40, c => `<path d="M8 20H194" stroke="${c}" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 20"/>`],
-  wave:   [200, 40, c => `<path d="M6 20q12-18 24 0t24 0 24 0 24 0 24 0 24 0 24 0 20 0" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`],
-  arrow:  [200, 40, c => `<path d="M6 20H168" stroke="${c}" stroke-width="7" stroke-linecap="round"/><path d="M196 20L160 3V37Z" fill="${c}"/>`],
-  arrow2: [200, 40, c => `<path d="M36 20H164" stroke="${c}" stroke-width="7"/><path d="M196 20L160 3V37ZM4 20L40 3V37Z" fill="${c}"/>`],
-  block:  [200, 80, c => `<path d="M0 26H118V4L200 40L118 76V54H0Z" fill="${c}"/>`],
-  curve:  [200, 110, c => `<path d="M10 100Q70 0 166 52" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round"/><path d="M194 70L150 68L172 34Z" fill="${c}"/>`],
-  rect:   [200, 140, c => `<rect x="5" y="5" width="190" height="130" fill="none" stroke="${c}" stroke-width="8"/>`],
-  rrect:  [200, 140, c => `<rect x="5" y="5" width="190" height="130" rx="26" fill="none" stroke="${c}" stroke-width="8"/>`],
-  ring:   [200, 200, c => `<circle cx="100" cy="100" r="92" fill="none" stroke="${c}" stroke-width="10"/>`],
-  box:    [200, 140, c => `<rect width="200" height="140" rx="18" fill="${c}"/>`],
-  disc:   [200, 200, c => `<circle cx="100" cy="100" r="100" fill="${c}"/>`],
-  tri:    [200, 174, c => `<path d="M100 0L200 174H0Z" fill="${c}"/>`],
-  bubble: [200, 160, c => `<path d="M20 0H180a20 20 0 0 1 20 20V100a20 20 0 0 1-20 20H90L50 160V120H20a20 20 0 0 1-20-20V20A20 20 0 0 1 20 0Z" fill="${c}"/>`],
+  // 線條與連接線
+  line:    [200, 40,  c => `<path d="M6 20H194" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`, '直線'],
+  thick:   [200, 40,  c => `<path d="M10 20H190" stroke="${c}" stroke-width="16" stroke-linecap="round"/>`, '粗線'],
+  dash:    [200, 40,  c => `<path d="M6 20H194" stroke="${c}" stroke-width="6" stroke-dasharray="20 14"/>`, '虛線'],
+  dots:    [200, 40,  c => `<path d="M8 20H194" stroke="${c}" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 20"/>`, '點線'],
+  wave:    [200, 40,  c => `<path d="M6 20q12-18 24 0t24 0 24 0 24 0 24 0 24 0 24 0 20 0" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`, '波浪線'],
+  arrow:   [200, 40,  c => `<path d="M6 20H168" stroke="${c}" stroke-width="7" stroke-linecap="round"/><path d="M196 20L160 3V37Z" fill="${c}"/>`, '單向箭號'],
+  arrow2:  [200, 40,  c => `<path d="M36 20H164" stroke="${c}" stroke-width="7"/><path d="M196 20L160 3V37ZM4 20L40 3V37Z" fill="${c}"/>`, '雙向箭號'],
+  dasharr: [200, 40,  c => `<path d="M6 20H164" stroke="${c}" stroke-width="7" stroke-dasharray="16 10"/><path d="M196 20L160 3V37Z" fill="${c}"/>`, '虛線箭號'],
+  curve:   [200, 110, c => `<path d="M10 100Q70 0 166 52" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round"/><path d="M194 70L150 68L172 34Z" fill="${c}"/>`, '彎曲箭號'],
+  elbow:   [200, 110, c => `<path d="M10 16H100V92H166" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M194 92L158 74V110Z" fill="${c}"/>`, '轉折箭號'],
+  // 外框與括弧
+  rect:     [200, 140, c => `<rect x="5" y="5" width="190" height="130" fill="none" stroke="${c}" stroke-width="8"/>`, '矩形外框'],
+  rrect:    [200, 140, c => `<rect x="5" y="5" width="190" height="130" rx="26" fill="none" stroke="${c}" stroke-width="8"/>`, '圓角外框'],
+  ring:     [200, 200, c => `<circle cx="100" cy="100" r="92" fill="none" stroke="${c}" stroke-width="10"/>`, '圓形外框'],
+  framebox: [200, 140, c => `<path fill-rule="evenodd" d="M0 0H200V140H0ZM24 24V116H176V24Z" fill="${c}"/>`, '粗框矩形'],
+  braceL:   [70, 200,  c => `<path d="M56 10Q34 10 34 32V78Q34 100 14 100Q34 100 34 122V168Q34 190 56 190" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round"/>`, '左大括弧'],
+  braceR:   [70, 200,  c => `<path d="M14 10Q36 10 36 32V78Q36 100 56 100Q36 100 36 122V168Q36 190 14 190" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round"/>`, '右大括弧'],
+  // 基本幾何
+  srect:   [200, 140, c => `<rect width="200" height="140" fill="${c}"/>`, '矩形'],
+  box:     [200, 140, c => `<rect width="200" height="140" rx="24" fill="${c}"/>`, '圓角矩形'],
+  snip1:   [200, 140, c => `<path d="M0 0H162L200 38V140H0Z" fill="${c}"/>`, '單切角矩形'],
+  snip2:   [200, 140, c => `<path d="M0 0H162L200 38V140H38L0 102Z" fill="${c}"/>`, '對角切角矩形'],
+  disc:    [200, 200, c => `<circle cx="100" cy="100" r="100" fill="${c}"/>`, '圓形'],
+  oval:    [200, 130, c => `<ellipse cx="100" cy="65" rx="100" ry="65" fill="${c}"/>`, '橢圓'],
+  donut:   [200, 200, c => `<path fill-rule="evenodd" d="M100 0a100 100 0 1 0 0 200 100 100 0 1 0 0-200ZM100 44a56 56 0 1 1 0 112 56 56 0 1 1 0-112Z" fill="${c}"/>`, '空心圓環'],
+  tri:     [200, 174, c => `<path d="M100 0L200 174H0Z" fill="${c}"/>`, '等腰三角形'],
+  rtri:    [200, 174, c => `<path d="M0 0L200 174H0Z" fill="${c}"/>`, '直角三角形'],
+  diamond: [200, 200, c => `<path d="M100 0L200 100L100 200L0 100Z" fill="${c}"/>`, '菱形'],
+  para:    [200, 140, c => `<path d="M36 0H200L164 140H0Z" fill="${c}"/>`, '平行四邊形'],
+  trap:    [200, 140, c => `<path d="M38 0H162L200 140H0Z" fill="${c}"/>`, '梯形'],
+  pent:    [200, 200, c => `<path d="${regPoly(5, 98, 100, 105)}" fill="${c}"/>`, '五邊形'],
+  hex:     [200, 200, c => `<path d="${regPoly(6, 98, 100, 100, 0)}" fill="${c}"/>`, '六邊形'],
+  oct:     [200, 200, c => `<path d="${regPoly(8, 98, 100, 100, Math.PI / 8)}" fill="${c}"/>`, '八邊形'],
+  cross:   [200, 200, c => `<path d="M68 0H132V68H200V132H132V200H68V132H0V68H68Z" fill="${c}"/>`, '十字形'],
+  times:   [200, 200, c => `<path d="M34 6L100 72L166 6L194 34L128 100L194 166L166 194L100 128L34 194L6 166L72 100L6 34Z" fill="${c}"/>`, '叉號'],
+  moon:    [200, 200, c => `<path d="M148 18A95 95 0 1 0 148 182A85 85 0 0 1 148 18Z" fill="${c}"/>`, '新月'],
+  pie:     [200, 200, c => `<path d="M100 100V4A96 96 0 1 0 196 100Z" fill="${c}"/>`, '缺角圓（扇形）'],
+  heart:   [200, 185, c => `<path d="M100 176C25 128 4 86 4 52A48 48 0 0 1 100 38A48 48 0 0 1 196 52C196 86 175 128 100 176Z" fill="${c}"/>`, '愛心'],
+  drop:    [160, 200, c => `<path d="M80 4C116 62 152 96 152 132A72 72 0 1 1 8 132C8 96 44 62 80 4Z" fill="${c}"/>`, '水滴'],
+  cloud:   [200, 140, c => `<path d="M48 124H156a32 32 0 0 0 6-63A44 44 0 0 0 78 36a38 38 0 0 0-48 30A30 30 0 0 0 48 124Z" fill="${c}"/>`, '雲朵'],
+  bolt:    [160, 200, c => `<path d="M74 0H148L98 78H154L46 200L72 110H16Z" fill="${c}"/>`, '閃電'],
+  sun:     [200, 200, c => `<circle cx="100" cy="100" r="46" fill="${c}"/>` + [...Array(8)].map((_, i) => { const a = i * Math.PI / 4; return `<path d="M${(100 + 62 * Math.cos(a)).toFixed(1)} ${(100 + 62 * Math.sin(a)).toFixed(1)}L${(100 + 92 * Math.cos(a)).toFixed(1)} ${(100 + 92 * Math.sin(a)).toFixed(1)}" stroke="${c}" stroke-width="12" stroke-linecap="round"/>`; }).join(''), '太陽'],
+  // 箭號圖案
+  block:   [200, 80,  c => `<path d="M0 26H118V4L200 40L118 76V54H0Z" fill="${c}"/>`, '右寬箭號'],
+  barrowL: [200, 80,  c => `<path d="M200 26H82V4L0 40L82 76V54H200Z" fill="${c}"/>`, '左寬箭號'],
+  barrowU: [100, 200, c => `<path d="M32 200V80H4L50 0L96 80H68V200Z" fill="${c}"/>`, '上寬箭號'],
+  barrowD: [100, 200, c => `<path d="M32 0V120H4L50 200L96 120H68V0Z" fill="${c}"/>`, '下寬箭號'],
+  barrow2: [200, 80,  c => `<path d="M52 4L0 40L52 76V54H148V76L200 40L148 4V26H52Z" fill="${c}"/>`, '左右雙箭號'],
+  barrow4: [200, 200, c => `<path d="M100 0L132 38H112V88H162V68L200 100L162 132V112H112V162H132L100 200L68 162H88V112H38V132L0 100L38 68V88H88V38H68Z" fill="${c}"/>`, '四向箭號'],
+  pentarr: [200, 120, c => `<path d="M0 0H150L200 60L150 120H0Z" fill="${c}"/>`, '五邊形箭號'],
+  chevron: [200, 120, c => `<path d="M0 0H150L200 60L150 120H0L50 60Z" fill="${c}"/>`, 'V形箭號'],
+  uarrow:  [200, 160, c => `<path d="M40 156V70A56 56 0 0 1 152 70V104H180L136 156L92 104H120V70A24 24 0 0 0 72 70V156Z" fill="${c}"/>`, 'U形迴轉箭號'],
+  // 星形與彩帶
+  star4:   [200, 200, c => `<path d="${starPath(4, 98, 30)}" fill="${c}"/>`, '四角星'],
+  star5:   [200, 200, c => `<path d="${starPath(5, 98, 38, 100, 106)}" fill="${c}"/>`, '五角星'],
+  star6:   [200, 200, c => `<path d="${starPath(6, 98, 52)}" fill="${c}"/>`, '六角星'],
+  star8:   [200, 200, c => `<path d="${starPath(8, 98, 46)}" fill="${c}"/>`, '八角星'],
+  burst12: [200, 200, c => `<path d="${starPath(12, 98, 62)}" fill="${c}"/>`, '12芒星爆'],
+  burst24: [200, 200, c => `<path d="${starPath(24, 98, 76)}" fill="${c}"/>`, '24芒星爆'],
+  ribbon:  [200, 100, c => `<path d="M0 10H200L176 50L200 90H0L24 50Z" fill="${c}"/>`, '橫幅彩帶'],
+  scroll:  [200, 120, c => `<path d="M0 18Q50 0 100 18T200 18V102Q150 120 100 102T0 102Z" fill="${c}"/>`, '波浪橫幅'],
+  tag:     [200, 120, c => `<path fill-rule="evenodd" d="M0 14A14 14 0 0 1 14 0H140L200 60L140 120H14A14 14 0 0 1 0 106ZM32 46a14 14 0 1 0 0 28 14 14 0 1 0 0-28Z" fill="${c}"/>`, '吊牌標籤'],
+  shield:  [180, 200, c => `<path d="M10 10H170V104C170 154 90 194 90 194C90 194 10 154 10 104Z" fill="${c}"/>`, '盾牌'],
+  // 圖說與流程圖
+  bubble:       [200, 160, c => `<path d="M20 0H180a20 20 0 0 1 20 20V100a20 20 0 0 1-20 20H90L50 160V120H20a20 20 0 0 1-20-20V20A20 20 0 0 1 20 0Z" fill="${c}"/>`, '圓角對話框'],
+  calloutRect:  [200, 160, c => `<path d="M0 0H200V120H88L46 160V120H0Z" fill="${c}"/>`, '方形對話框'],
+  calloutOval:  [200, 160, c => `<ellipse cx="100" cy="60" rx="98" ry="58" fill="${c}"/><path d="M62 104L42 156L92 114Z" fill="${c}"/>`, '橢圓對話框'],
+  calloutCloud: [200, 170, c => `<path d="M48 116H156a30 30 0 0 0 6-59A42 42 0 0 0 80 34a36 36 0 0 0-48 28A28 28 0 0 0 48 116Z" fill="${c}"/><circle cx="64" cy="134" r="10" fill="${c}"/><circle cx="44" cy="154" r="6" fill="${c}"/>`, '思考雲朵框'],
+  doc:          [200, 140, c => `<path d="M0 0H200V116Q150 96 100 116T0 116Z" fill="${c}"/>`, '文件'],
+  db:           [160, 200, c => `<ellipse cx="80" cy="30" rx="72" ry="22" fill="none" stroke="${c}" stroke-width="10"/><path d="M8 30V170A72 22 0 0 0 152 170V30" fill="none" stroke="${c}" stroke-width="10"/><path d="M8 74A72 22 0 0 0 152 74" fill="none" stroke="${c}" stroke-width="7"/>`, '資料庫'],
 };
-const artOf = el => ARTS[el.dataset.art]
+const SHAPE_GROUPS = [
+  ['線條與連接線', ['line', 'thick', 'dash', 'dots', 'wave', 'arrow', 'arrow2', 'dasharr', 'curve', 'elbow']],
+  ['外框與括弧', ['rect', 'rrect', 'ring', 'framebox', 'braceL', 'braceR']],
+  ['基本圖案', ['srect', 'box', 'snip1', 'snip2', 'disc', 'oval', 'donut', 'tri', 'rtri', 'diamond', 'para', 'trap', 'pent', 'hex', 'oct', 'cross', 'times', 'moon', 'pie', 'heart', 'drop', 'cloud', 'bolt', 'sun']],
+  ['箭號圖案', ['block', 'barrowL', 'barrowU', 'barrowD', 'barrow2', 'barrow4', 'pentarr', 'chevron', 'uarrow']],
+  ['星形與彩帶', ['star4', 'star5', 'star6', 'star8', 'burst12', 'burst24', 'ribbon', 'scroll', 'tag', 'shield']],
+  ['圖說與流程圖', ['bubble', 'calloutRect', 'calloutOval', 'calloutCloud', 'doc', 'db']],
+];
+const artOf = el => (Object.hasOwn(ARTS, el.dataset.art ?? '') && ARTS[el.dataset.art])
   || (el.dataset.body && [...(el.dataset.vb || '').split(' ').map(Number), c => el.dataset.body.replaceAll('{c}', c)]);
-const artSrc = ([w, h, f], c, g) => {
-  // 漸層：把形狀畫成白色遮罩，再用一塊鋪滿整個畫布的漸層透過遮罩露出來；
-  // 這樣線條（高度為 0 的路徑）和合併後的形狀也能正確上漸層
-  const body = g && g.t !== 'solid'
-    ? `<defs>${svgGrad(g, w, h)}<mask id="sm" maskUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}">${f('#fff')}</mask></defs><rect width="${w}" height="${h}" fill="url(#sg)" mask="url(#sm)"/>`
-    : f(c);
+const escXml = s => s.replaceAll('&', '&amp;');
+const artSrc = ([w, h, f], c, g, im) => {
+  // 漸層／圖片：把形狀畫成白色遮罩，再用漸層或圖片透過遮罩露出來；
+  // 這樣線條（高度為 0 的路徑）和合併後的形狀也能正確填色
+  const iu = im && safeImg(im.u);
+  const body = iu
+    ? `<defs>${im.m === 'tile'
+        ? `<pattern id="sp" width="${(w / 3).toFixed(1)}" height="${(h / 3).toFixed(1)}" patternUnits="userSpaceOnUse"><image href="${escXml(iu)}" width="${(w / 3).toFixed(1)}" height="${(h / 3).toFixed(1)}" preserveAspectRatio="xMidYMid slice"/></pattern>`
+        : ''}<mask id="sm" maskUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}">${f('#fff')}</mask></defs>${im.m === 'tile'
+        ? `<rect width="${w}" height="${h}" fill="url(#sp)" mask="url(#sm)"/>`
+        : `<image href="${escXml(iu)}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" mask="url(#sm)"/>`}`
+    : g && g.t !== 'solid'
+      ? `<defs>${svgGrad(g, w, h)}<mask id="sm" maskUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}">${f('#fff')}</mask></defs><rect width="${w}" height="${h}" fill="url(#sg)" mask="url(#sm)"/>`
+      : f(c);
   return 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`);
 };
-const refreshArt = el => { el.src = artSrc(artOf(el), el.dataset.color || '#e03131', parseFill(el.dataset.fill)); };
+const refreshArt = el => {
+  const u = safeImg(el.dataset.fimg);
+  el.src = artSrc(artOf(el), el.dataset.color || '#e03131', parseFill(el.dataset.fill), u ? { u, m: el.dataset.fimgm } : null);
+};
 const setColor = (el, v) => setFill(el, solid(v));
-for (const k in ARTS) {
-  const b = document.createElement('button');
-  b.innerHTML = `<img src="${artSrc(ARTS[k], '#334155')}" alt="${k}">`;
-  b.onclick = () => {
-    const im = new Image();
-    im.src = artSrc(ARTS[k], im.dataset.color = '#e03131');
-    im.dataset.art = k;
-    im.draggable = false;
-    im.style.width = (ARTS[k][1] === 40 ? 40 : 25) + '%';
-    add(im);
-  };
-  $('shapes').append(b);
+for (const [title, keys] of SHAPE_GROUPS) {
+  const h = document.createElement('h3');
+  h.textContent = title;
+  $('shapes').append(h);
+  for (const k of keys) {
+    const [sw, sh, , label] = ARTS[k], b = document.createElement('button');
+    b.title = label || k;
+    b.innerHTML = `<img src="${artSrc(ARTS[k], '#334155')}" alt="${label || k}">`;
+    b.onclick = () => {
+      const im = new Image();
+      im.src = artSrc(ARTS[k], im.dataset.color = '#e03131');
+      im.dataset.art = k;
+      im.draggable = false;
+      im.style.width = (sh <= 50 ? 40 : sw < sh ? 12 : 25) + '%';
+      add(im);
+    };
+    $('shapes').append(b);
+  }
 }
 
 // 形狀運算：不算幾何，而是把兩個形狀畫進同一張 SVG，用遮罩得到聯集／交集／減去的結果。
@@ -724,7 +1038,22 @@ function combine(a, b, op) {
     // 與 CSS 相同順序：以中心為原點 旋轉 → 傾斜 → 縮放（透視無法在平面 SVG 表達，略過）
     return `<g transform="translate(${n(x)} ${n(y)}) translate(${cx} ${cy}) rotate(${parseFloat(e.style.rotate) || 0}) skewX(${v('kx')}) skewY(${v('ky')}) scale(${v('sx')} ${v('sy')}) translate(${-cx} ${-cy}) scale(${w / vw} ${h / vh})">${f(c)}</g>`;
   };
-  const box = e => { const r = e.getBoundingClientRect(); return [r.left - P.left, r.top - P.top, r.right - P.left, r.bottom - P.top]; };
+  // 範圍用尺寸與變形直接算，不讀畫面上的大小：剛加入、還沒載入的圖片量起來高度是 0。
+  // 四個角套上與 part() 相同的 旋轉 → 傾斜 → 縮放，再取外框
+  const box = e => {
+    const [vw, vh] = artOf(e), w = parseFloat(e.style.width) / 100 * P.width, h = w * vh / vw;
+    const cx = parseFloat(e.style.left) / 100 * P.width + w / 2, cy = parseFloat(e.style.top) / 100 * P.height + h / 2;
+    const v = k => tfv(e, k), rad = d => d * Math.PI / 180, t = rad(parseFloat(e.style.rotate) || 0);
+    const tx = Math.tan(rad(v('kx'))), ty = Math.tan(rad(v('ky')));
+    const pts = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) => {
+      let px = i * w / 2 * v('sx'), py = j * h / 2 * v('sy');
+      py += ty * px;
+      px += tx * py;
+      return [cx + px * Math.cos(t) - py * Math.sin(t), cy + px * Math.sin(t) + py * Math.cos(t)];
+    });
+    const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  };
   let [x0, y0, x1, y1] = box(a);
   if (op === 'union') { const q = box(b); x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[2]); y1 = Math.max(y1, q[3]); }
   const w = x1 - x0, h = y1 - y0, id = 'm' + Math.random().toString(36).slice(2, 8), area = `x="${n(x0)}" y="${n(y0)}" width="${n(w)}" height="${n(h)}"`;
@@ -738,6 +1067,7 @@ function combine(a, b, op) {
   im.style.cssText = `left:${x0 / P.width * 100}%;top:${y0 / P.height * 100}%;width:${w / P.width * 100}%`;
   if (a.style.opacity) im.style.opacity = a.style.opacity;
   if (a.dataset.fill) im.dataset.fill = a.dataset.fill;
+  if (a.dataset.fimg) { im.dataset.fimg = a.dataset.fimg; if (a.dataset.fimgm) im.dataset.fimgm = a.dataset.fimgm; }
   im.dataset.color = a.dataset.color || '#e03131';
   refreshArt(im);
   a.replaceWith(im);
@@ -760,7 +1090,7 @@ prop('strike', deco);
 prop('rot', (el, i) => el.style.rotate = +i.value ? i.value + 'deg' : '');
 prop('stroke', (el, i) => { el.style.webkitTextStroke = i.checked ? '.12em #fff' : ''; el.style.paintOrder = i.checked ? 'stroke fill' : ''; });
 prop('op', (el, i) => el.style.opacity = i.value / 100);
-$('bgpick').oninput = e => { $('bg').value = e.target.value; $('bgfill').value = ''; render(); };
+$('bgpick').oninput = e => { $('bg').value = e.target.value; $('bgfill').value = $('bgimg').value = ''; render(); };
 
 // ── 填色：純色／線性／放射／雙色／三色／彩虹 ──
 // 存成字串「種類|角度|位置|顏色1|顏色2|中間色」；專案檔可能來自別人，讀回時逐欄驗證，只接受 #rrggbb 與 transparent
@@ -806,15 +1136,17 @@ function svgGrad(g, w, h) {
 function setFill(el, f) {
   if (el.tagName === 'IMG' && !artOf(el)) { $('warn').textContent = '照片不能換顏色，只有文字與「形狀」可以'; return; }
   el.dataset.color = f.c1;
+  delete el.dataset.fimg; delete el.dataset.fimgm;
   if (f.t === 'solid') delete el.dataset.fill; else el.dataset.fill = encFill(f);
   if (el.tagName === 'IMG') refreshArt(el); else { el.style.color = f.c1; paintText(el); }
 }
 function applyFill(f) {
   const t = $('ptarget').value;
-  if (t === 'bg') { $('bg').value = f.c1; $('bgfill').value = f.t === 'solid' ? '' : encFill(f); render(); return; }
+  if (t === 'bg') { $('bg').value = f.c1; $('bgfill').value = f.t === 'solid' ? '' : encFill(f); $('bgimg').value = ''; render(); return; }
   if (!sel) { $('warn').textContent = '請先點選海報上的物件，再調顏色'; return; }
   if (t === 'frame') {
     if (!sel.classList.contains('text')) { $('warn').textContent = '文字框顏色只用在文字物件'; return; }
+    delete sel.dataset.ffimg; delete sel.dataset.ffimgm;
     sel.style.setProperty('--fc', sel.dataset.fc = f.c1);
     if (f.t === 'solid') { delete sel.dataset.ff; sel.style.removeProperty('--fg'); }
     else { sel.dataset.ff = encFill(f); sel.style.setProperty('--fg', fillCss(f)); }
@@ -822,8 +1154,42 @@ function applyFill(f) {
   } else setFill(sel, f);
   save();
 }
-function curFill() {
+function curImg() {
   const t = $('ptarget').value;
+  if (t === 'bg') return { u: safeImg($('bgimg').value), m: $('bgimgm').value || 'cover' };
+  if (!sel) return null;
+  if (t === 'frame') return { u: safeImg(sel.dataset.ffimg), m: sel.dataset.ffimgm || 'cover' };
+  return { u: safeImg(sel.dataset.fimg), m: sel.dataset.fimgm || 'cover' };
+}
+function syncImgUI(u, m) {
+  $('fimgm').value = m === 'tile' ? 'tile' : 'cover';
+  $('imgpre').hidden = !u;
+  if (u) $('imgpre').src = u;
+}
+function applyImg(u, m = $('fimgm').value) {
+  const su = safeImg(u);
+  if (!su) return;
+  const t = $('ptarget').value, mode = m === 'tile' ? 'tile' : 'cover';
+  if (t === 'bg') { $('bgimg').value = su; $('bgimgm').value = mode; $('bgfill').value = ''; render(); syncImgUI(su, mode); return; }
+  if (!sel) { $('warn').textContent = '請先點選海報上的物件，再設定圖片填色'; return; }
+  if (t === 'frame') {
+    if (!sel.classList.contains('text')) { $('warn').textContent = '文字框只用在文字物件'; return; }
+    delete sel.dataset.ff;
+    sel.dataset.ffimg = su; sel.dataset.ffimgm = mode;
+    sel.style.setProperty('--fg', imgBgCss(su, mode));
+    if (!sel.dataset.frame) { sel.dataset.frame = 'box'; $('frame').value = 'box'; }
+  } else {
+    if (sel.tagName === 'IMG' && !artOf(sel)) { $('warn').textContent = '照片本身已經是圖片，請選「編輯圖片」裁成不同形狀'; return; }
+    delete sel.dataset.fill;
+    sel.dataset.fimg = su; sel.dataset.fimgm = mode;
+    if (sel.tagName === 'IMG') refreshArt(sel); else paintText(sel);
+  }
+  syncImgUI(su, mode);
+  save();
+}
+function curFill() {
+  const t = $('ptarget').value, im = curImg();
+  if (im?.u) return { t: 'image', u: im.u, m: im.m };
   if (t === 'bg') return parseFill($('bgfill').value) || solid($('bg').value);
   if (!sel) return null;
   if (t === 'frame') return parseFill(sel.dataset.ff) || solid(sel.dataset.fc || '#ffd43b');
@@ -835,19 +1201,45 @@ function syncHex() {
   if (document.activeElement !== $('hex')) $('hex').value = $(act).value;
 }
 function showType(t) {
-  if (t === 'solid' || (t !== 'three' && act === 'c3')) act = 'c1';
+  if (t === 'solid' || t === 'image' || (t !== 'three' && act === 'c3')) act = 'c1';
   for (const n of $('colsec').querySelectorAll('[data-show]')) n.hidden = !n.dataset.show.split(' ').includes(t);
   syncHex();
 }
 function setUI(f) {
-  $('ftype').value = f.t; $('fang').value = f.a; $('fmid').value = f.m;
+  $('ftype').value = f.t;
+  if (f.t === 'image') { syncImgUI(f.u, f.m); showType('image'); return; }
+  syncImgUI('', 'cover');
+  $('fang').value = f.a; $('fmid').value = f.m;
   // 純色時不動顏色2／中間色，切換成漸層才有上次的搭配可用
   for (const k of f.t === 'solid' ? ['c1'] : ['c1', 'c2', 'c3']) if (HEX6.test(f[k])) $(k).value = f[k];
   showType(f.t);
+  syncVals();
 }
 function loadFillUI() { const f = curFill(); if (f) setUI(f); }
 const readFill = () => ({ t: $('ftype').value, a: +$('fang').value, m: +$('fmid').value, c1: $('c1').value, c2: $('c2').value, c3: $('c3').value });
-for (const k of ['ftype', 'fang', 'fmid', 'c1', 'c2', 'c3']) $(k).addEventListener('input', () => { showType($('ftype').value); applyFill(readFill()); });
+for (const k of ['ftype', 'fang', 'fmid', 'c1', 'c2', 'c3']) $(k).addEventListener('input', () => {
+  const t = $('ftype').value;
+  showType(t);
+  if (t === 'image') {
+    const im = curImg();
+    syncImgUI(im?.u || '', im?.m || $('fimgm').value);
+    if (im?.u) applyImg(im.u, im.m);
+    else $('warn').textContent = '請點「選擇圖片…」挑一張圖';
+    return;
+  }
+  applyFill(readFill());
+});
+$('pickImg').onclick = () => $('fimgpick').click();
+$('fimgpick').onchange = e => {
+  const f = e.target.files[0]; e.target.value = '';
+  readImgUrl(f, u => applyImg(u, $('fimgm').value));
+};
+$('fimgm').onchange = () => { const im = curImg(); if (im?.u) applyImg(im.u, $('fimgm').value); };
+$('clearImg').onclick = () => {
+  const t = $('ptarget').value, fallback = t === 'bg' ? $('bg').value : t === 'frame' ? (sel?.dataset.fc || '#ffd43b') : (sel?.dataset.color || '#000000');
+  setUI(solid(fallback));
+  applyFill(solid(fallback));
+};
 for (const k of ['c1', 'c2', 'c3']) $(k).addEventListener('click', () => { act = k; syncHex(); });
 $('hex').oninput = e => {
   const v = e.target.value.trim().replace(/^#?/, '#');
@@ -858,13 +1250,20 @@ $('hex').oninput = e => {
 };
 $('swap').onclick = () => { const c = $('c1').value; $('c1').value = $('c2').value; $('c2').value = c; syncHex(); applyFill(readFill()); };
 $('ptarget').onchange = loadFillUI;
-// 漸層範本
+// 漸層範本（線性／放射／雙色硬切／三色金屬／彩虹）
 const GPRE = {
-  粉嫩: 'linear|135|50|#ff9a9e|#fad0c4|#ffffff', 夕陽: 'linear|90|50|#f83600|#f9d423|#ffffff', 海洋: 'linear|135|50|#00c6fb|#005bea|#ffffff',
-  薄荷: 'linear|135|50|#43e97b|#38f9d7|#ffffff', 霓虹: 'linear|90|50|#fc00ff|#00dbde|#ffffff', 葡萄: 'linear|135|50|#7f00ff|#e100ff|#ffffff',
-  金屬金: 'three|180|50|#b8860b|#8a5a00|#fff3b0', 金屬銀: 'three|180|50|#8e9eab|#4b5563|#ffffff', 暖光放射: 'radial|0|35|#fff3bf|#f76707|#ffffff',
-  藍光放射: 'radial|0|45|#ffffff|#1864ab|#ffffff', 紅黑雙色: 'two|180|50|#e03131|#1a1a1a|#ffffff', 斜切雙色: 'two|135|50|#ffd43b|#1971c2|#ffffff',
-  彩虹: 'rainbow|90|50|#ff004c|#7a3cff|#ffffff',
+  粉嫩: 'linear|135|50|#ff9a9e|#fad0c4|#ffffff', 蜜桃: 'linear|135|50|#ff758c|#ff7eb3|#ffffff',
+  櫻花: 'linear|135|50|#fbc2eb|#a6c1ee|#ffffff', 夕陽: 'linear|90|50|#f83600|#f9d423|#ffffff',
+  烈焰: 'linear|135|50|#ff0844|#ffb199|#ffffff', 海洋: 'linear|135|50|#00c6fb|#005bea|#ffffff',
+  極光: 'linear|135|50|#00f5a0|#00d9f5|#ffffff', 薄荷: 'linear|135|50|#43e97b|#38f9d7|#ffffff',
+  抹茶: 'linear|135|50|#d4fc79|#56ab2f|#ffffff', 霓虹: 'linear|90|50|#fc00ff|#00dbde|#ffffff',
+  葡萄: 'linear|135|50|#7f00ff|#e100ff|#ffffff', 夜空: 'linear|180|50|#0f2027|#2c5364|#ffffff',
+  金屬金: 'three|180|50|#b8860b|#8a5a00|#fff3b0', 金屬銀: 'three|180|50|#8e9eab|#4b5563|#ffffff',
+  玫瑰金: 'three|135|50|#b76e79|#8e4b56|#ffe3e3', 暖沙粉: 'three|135|50|#d4a373|#a98467|#faedcd',
+  暖光放射: 'radial|0|35|#fff3bf|#f76707|#ffffff', 藍光放射: 'radial|0|45|#ffffff|#1864ab|#ffffff',
+  粉紫放射: 'radial|0|40|#ffe3ec|#7048e8|#ffffff', 暗夜聚焦: 'radial|0|40|#4c1d95|#09061a|#ffffff',
+  紅黑雙色: 'two|180|50|#e03131|#1a1a1a|#ffffff', 斜切雙色: 'two|135|50|#ffd43b|#1971c2|#ffffff',
+  黑白對半: 'two|90|50|#111827|#f8fafc|#ffffff', 彩虹: 'rainbow|90|50|#ff004c|#7a3cff|#ffffff',
 };
 for (const name in GPRE) {
   const f = parseFill(GPRE[name]), b = document.createElement('button');
@@ -874,19 +1273,30 @@ for (const name in GPRE) {
   $('gpre').append(b);
 }
 
-// 色票：蠟筆盒式的 12 色，24、36 色各往後多加 12 色；最後一格是透明
-const PAL = ('#e03131 #f76707 #ffd43b #94d82d #2f9e44 #4dabf7 #1864ab #7048e8 #f783ac #8d5524 #000000 #ffffff '
+// 色票：蠟筆盒 12/24/36 色＋精選主題色系；最後一格是透明
+const CLASSIC = ('#e03131 #f76707 #ffd43b #94d82d #2f9e44 #4dabf7 #1864ab #7048e8 #f783ac #8d5524 #000000 #ffffff '
   + '#c92a2a #ff922b #fff3bf #d8f5a2 #087f5b #22b8cf #364fc7 #ae3ec9 #e64980 #d9a066 #868e96 #ffd8a8 '
   + '#800000 #e8590c #f59f00 #5c940d #0b7285 #a5d8ff #0b2a5b #d0bfff #862e9c #5c3a21 #343a40 #dee2e6').split(' ');
+const THEMES = {
+  morandi: '#b5838d #e5989b #ffb4a2 #ffcdb2 #9a8c98 #6d6875 #a3b18a #84a98c #8d99ae #4a5759 #dad7cd #f5ebe0'.split(' '),
+  pastel:  '#ffadad #ffd6a5 #fdffb6 #caffbf #9bf6ff #a0c4ff #bdb2ff #ffc6ff #f8edeb #fcd5ce #d8e2dc #ffffff'.split(' '),
+  retro:   '#d62828 #f77f00 #fcbf49 #eae2b7 #003049 #264653 #2a9d8f #e76f51 #606c38 #bc6c25 #3d405b #f4f1de'.split(' '),
+  neon:    '#ff006e #fb5607 #ffbe0b #00f5d4 #00bbf9 #8338ec #3a86ff #f15bb5 #ccff00 #09061a #1e1b4b #ffffff'.split(' '),
+  forest:  '#283618 #606c38 #a3b18a #dad7cd #dda15e #bc6c25 #7f4f24 #582f0e #344e41 #588157 #fefae0 #ede0d4'.split(' '),
+  tea:     '#780000 #c1121f #fdf0d5 #003049 #669bbc #9e2a2b #e09f3e #335c67 #540b0e #b08968 #ede4d8 #2b2d42'.split(' '),
+  mono:    '#000000 #1a1a1a #343a40 #495057 #6c757d #868e96 #adb5bd #ced4da #dee2e6 #e9ecef #f8f9fa #ffffff'.split(' '),
+};
 function paint(v) {
   if (v === 'transparent') { setUI(solid('#000000')); applyFill(solid('transparent')); return; }
+  if ($('ftype').value === 'image') setUI(solid(v));
   $($('ftype').value === 'solid' ? 'c1' : act).value = v;
   syncHex();
   applyFill(readFill());
 }
 ($('pn').onchange = () => {
   $('pal').innerHTML = '';
-  for (const v of [...PAL.slice(0, +$('pn').value), 'transparent']) {
+  const k = $('pn').value, list = THEMES[k] || CLASSIC.slice(0, +k || 12);
+  for (const v of [...list, 'transparent']) {
     const b = document.createElement('button');
     b.title = v === 'transparent' ? '透明' : v;
     v === 'transparent' ? b.className = 'none' : b.style.background = v;
@@ -915,10 +1325,21 @@ const WARPS = {
 const span = (cls, s) => { const k = document.createElement('span'); k.className = cls; k.textContent = s; return k; };
 function paintText(el) {
   if (!el.classList.contains('text') || el.isContentEditable) return;
-  const s = el.textContent, f = parseFill(el.dataset.fill), css = f && f.t !== 'solid' ? fillCss(f) : '', wf = WARPS[el.dataset.warp];
+  const s = el.textContent, img = safeImg(el.dataset.fimg), im = el.dataset.fimgm === 'tile';
+  const f = img ? null : parseFill(el.dataset.fill), css = img ? imgUrlCss(img) : f && f.t !== 'solid' ? fillCss(f) : '', wf = Object.hasOwn(WARPS, el.dataset.warp ?? '') && WARPS[el.dataset.warp];
   if (!css && !wf) { if (el.childElementCount) el.textContent = s; return; }
   el.textContent = '';
-  if (!wf) { const k = span('ink', s); k.style.backgroundImage = css; el.append(k); return; }
+  if (!wf) {
+    const k = span('ink', s);
+    k.style.backgroundImage = css;
+    if (img) {
+      k.style.backgroundSize = im ? '33.33% auto' : 'cover';
+      k.style.backgroundPosition = im ? '0 0' : 'center';
+      k.style.backgroundRepeat = im ? 'repeat' : 'no-repeat';
+    }
+    el.append(k);
+    return;
+  }
   const rows = s.split('\n').map((ln, i) => {
     if (i) el.append('\n');
     return [...ln].map(c => el.appendChild(span('ch', c)));
@@ -936,13 +1357,14 @@ function paintText(el) {
       if (o.base) ch.style.transformOrigin = vert ? '0 50%' : '50% 100%';
     }
   }
-  // 彎曲＋漸層：每個字各自畫背景，但尺寸與位移對齊整個文字框，看起來是同一道漸層
+  // 彎曲＋漸層／圖片：每個字各自畫背景，但尺寸與位移對齊整個文字框，看起來是同一張圖
   if (css) {
     const W = el.clientWidth / fs, H = el.clientHeight / fs;
     for (const ch of el.querySelectorAll('.ch')) {
       ch.classList.add('ink');
       ch.style.backgroundImage = css;
-      ch.style.backgroundSize = `${W.toFixed(3)}em ${H.toFixed(3)}em`;
+      ch.style.backgroundRepeat = img && im ? 'repeat' : 'no-repeat';
+      ch.style.backgroundSize = `${(img && im ? W / 3 : W).toFixed(3)}em ${(img && im ? H / 3 : H).toFixed(3)}em`;
       ch.style.backgroundPosition = `${(-ch.offsetLeft / fs).toFixed(3)}em ${(-ch.offsetTop / fs).toFixed(3)}em`;
     }
   }
@@ -1007,9 +1429,10 @@ $('selbox').addEventListener('pointerdown', e => {
     };
   }
   const mv = ev => { move(ev); mark(); };
-  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); select(el); save(); };
+  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); select(el); save(); };
   addEventListener('pointermove', mv);
   addEventListener('pointerup', up);
+  addEventListener('pointercancel', up);
 });
 
 // ── 面板位置：左／上／右，記在這台瀏覽器 ──
@@ -1044,26 +1467,67 @@ document.documentElement.style.setProperty('--burst', `polygon(${[...Array(32)].
   const a = i * Math.PI / 16, r = i % 2 ? 38 : 50;
   return `${(50 + r * Math.cos(a)).toFixed(1)}% ${(50 + r * Math.sin(a)).toFixed(1)}%`;
 })})`);
+for (const b of document.querySelectorAll('.align button')) b.onclick = () => {
+  if (!sel) return;
+  const m = b.dataset.al, P = poster.getBoundingClientRect(), R = sel.getBoundingClientRect();
+  const dx = m === 'l' ? P.left - R.left : m === 'r' ? P.right - R.right : m === 'cx' ? (P.left + P.width / 2) - (R.left + R.width / 2) : 0;
+  const dy = m === 't' ? P.top - R.top : m === 'b' ? P.bottom - R.bottom : m === 'cy' ? (P.top + P.height / 2) - (R.top + R.height / 2) : 0;
+  if (dx) sel.style.left = (parseFloat(sel.style.left) || 0) + dx / P.width * 100 + '%';
+  if (dy) sel.style.top = (parseFloat(sel.style.top) || 0) + dy / P.height * 100 + '%';
+  save();
+};
+function dup() {
+  if (!sel) return;
+  const c = sel.cloneNode(true);
+  c.style.left = (parseFloat(sel.style.left) || 0) + 3 + '%';
+  c.style.top = (parseFloat(sel.style.top) || 0) + 3 + '%';
+  poster.append(c);
+  select(c);
+  save();
+}
+$('dup').onclick = dup;
+$('up1').onclick = () => { sel?.nextElementSibling?.after(sel); save(); };
+$('dn1').onclick = () => { sel?.previousElementSibling?.before(sel); save(); };
 $('front').onclick = () => { poster.append(sel); save(); };
 $('back').onclick = () => { poster.prepend(sel); save(); };
 $('del').onclick = () => { sel.remove(); select(null); save(); };
 $('clear').onclick = () => { if (confirm('確定清空整張海報？')) { poster.innerHTML = ''; select(null); save(); } };
 
-function undo() {
-  if (!hist.length) return;
-  restoring = true;
-  load(JSON.parse(hist.pop()));
+function stepHist(from, to) {
+  if (timer) commit();   // 還沒存的變動先記成一步，才不會被跳過
+  if (!from.length) return;
+  if (cur !== null) { to.push(cur); if (to.length > 40) to.shift(); }
+  load(JSON.parse(from.pop()));
   render();
-  restoring = false;
-  lastPush = 0;
+  commit(true);
 }
+const undo = () => stepHist(hist, redoHist);
+const redo = () => stepHist(redoHist, hist);
 $('undo').onclick = undo;
+$('redo').onclick = redo;
 addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !sel?.isContentEditable && !/INPUT|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); }
-});
-addEventListener('keydown', e => {
-  if ((e.key === 'Delete' || e.key === 'Backspace') && sel && !sel.isContentEditable
-      && !/INPUT|SELECT/.test(document.activeElement.tagName)) $('del').onclick();
+  if (sel?.isContentEditable || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  const k = e.key.toLowerCase();
+  if (e.ctrlKey || e.metaKey) {
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    else if ((k === 'z' && e.shiftKey) || (k === 'y' && !e.shiftKey)) { e.preventDefault(); redo(); }
+    else if (k === 'd' && sel) { e.preventDefault(); dup(); }
+    return;
+  }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && sel) { $('del').onclick(); return; }
+  if (e.key === 'Escape') {
+    if (pendingOp) { pendingOp = null; $('warn').textContent = ''; }
+    else select(null);
+    return;
+  }
+  const dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+  if (dir && sel && sel.style.objectFit !== 'cover') {
+    e.preventDefault();
+    const step = e.shiftKey ? 10 : 1;
+    sel.style.left = (parseFloat(sel.style.left) || 0) + dir[0] * step / poster.clientWidth * 100 + '%';
+    sel.style.top = (parseFloat(sel.style.top) || 0) + dir[1] * step / poster.clientHeight * 100 + '%';
+    save();
+  }
 });
 
 // 分割列印：每張紙放一份完整海報的複本，位移後由 .win 裁出該張的範圍
@@ -1101,7 +1565,7 @@ $('export').onclick = () => {
   a.href = URL.createObjectURL(new Blob([data()], { type: 'application/json' }));
   a.download = '海報.poster.json';
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);   // 馬上釋放的話 Firefox／Safari 可能還沒開始下載
 };
 $('imp').onchange = async e => {
   const f = e.target.files[0];
@@ -1111,7 +1575,7 @@ $('imp').onchange = async e => {
   catch { alert('這不是海報專案檔'); }
 };
 
-try { const d = JSON.parse(localStorage.poster || 'null'); if (d) load(d); } catch {}
+try { const d = JSON.parse(localStorage.poster || 'null'); if (d) load(d); else select(null); } catch { select(null); }
 addEventListener('click', e => {
   for (const d of document.querySelectorAll('#bar details[open]'))
     if (!d.contains(e.target) || e.target.closest('#tpls button')) d.open = false;
@@ -1119,4 +1583,5 @@ addEventListener('click', e => {
 for (const k of KEYS) $(k).onchange = render;
 addEventListener('resize', render);
 render();
+commit(true);   // 開啟時的狀態直接當成起點，不算一步
 </script>

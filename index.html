@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>海報輸出</title>
+<style id="page"></style>
+<style>
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font:14px system-ui,"PingFang TC","Microsoft JhengHei",sans-serif;display:flex;height:100vh;background:#e4e4e8;color:#222}
+#panel{width:260px;flex:none;padding:14px;background:#fff;border-right:1px solid #ccc;overflow:auto}
+#panel h2{font-size:13px;margin:16px 0 6px;color:#666}
+#panel h2:first-child{margin-top:0}
+#panel label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0}
+#panel input[type=number]{width:70px}
+#panel input[type=range]{flex:1}
+#panel button{padding:6px 10px;margin:3px 3px 3px 0;cursor:pointer}
+#go{width:100%;padding:10px!important;font-size:16px;font-weight:700;background:#d6336c;color:#fff;border:0;border-radius:6px}
+#lib button{width:34px;height:34px;padding:0;margin:1px;font-size:20px;line-height:1}
+fieldset{border:0;padding:0;margin:0}
+fieldset:disabled{opacity:.4}
+#info{margin:8px 0;font-weight:600}
+#warn{color:#c00}
+small{color:#777;line-height:1.5;display:block}
+#stage{flex:1;display:grid;place-items:center;overflow:hidden}
+#wrap{position:relative;box-shadow:0 4px 24px #0004}
+.poster{position:absolute;inset:0;overflow:hidden;container-type:inline-size;background:#fff}
+#grid{position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(to right,#0006 1px,transparent 1px),linear-gradient(to bottom,#0006 1px,transparent 1px)}
+/* 所有元件用 % 與 cqw 定位，螢幕預覽與實際列印共用同一份 DOM、自動等比 */
+.el{position:absolute;cursor:move;user-select:none;touch-action:none;-webkit-user-drag:none}
+.el.text{white-space:pre;line-height:1.2;isolation:isolate}
+/* 特效框：全用 em，跟著字級縮放；--fc 是框色 */
+.text[data-frame]{padding:.2em .5em;background:var(--fc,#ffd43b)}
+.text[data-frame=round]{border-radius:.3em}
+.text[data-frame=pill]{border-radius:99em;padding:.2em .8em}
+.text[data-frame=oval]{border-radius:50%;padding:.5em .9em}
+.text[data-frame=double]{background:none;border:.18em double var(--fc,#ffd43b)}
+.text[data-frame=dashed]{background:none;border:.1em dashed var(--fc,#ffd43b);border-radius:.2em}
+.text[data-frame=burst],.text[data-frame=ribbon]{background:none}
+.text[data-frame=burst]{padding:.9em 1.1em}
+.text[data-frame=ribbon]{padding:.2em 1.1em}
+.text[data-frame=burst]::before,.text[data-frame=ribbon]::before{content:'';position:absolute;inset:0;z-index:-1;background:var(--fc,#ffd43b)}
+.text[data-frame=burst]::before{clip-path:var(--burst)}
+.text[data-frame=ribbon]::before{clip-path:polygon(0 0,100% 0,calc(100% - .5em) 50%,100% 100%,0 100%,.5em 50%)}
+.text[data-frame=bubble]{border-radius:.4em}
+.text[data-frame=bubble]::after{content:'';position:absolute;left:18%;top:calc(100% - 1px);border:.45em solid transparent;border-top-color:var(--fc,#ffd43b);border-bottom:0;border-right-width:.1em}
+.el.text[contenteditable]{cursor:text;user-select:text;outline:2px dashed #d6336c}
+.el.sel{outline:2px solid #1c7ed6}
+#print{display:none}
+@media print{
+  body{display:block;height:auto;background:none}
+  body>*:not(#print){display:none}
+  #print{display:block}
+  .sheet{position:relative;overflow:hidden}
+  .sheet:not(:last-child){break-after:page}
+  .win{position:relative;width:100%;height:100%;overflow:hidden;outline:.2mm dashed #999}
+  .tag{position:absolute;top:.5mm;font-size:2.5mm;color:#999}
+}
+</style>
+
+<div id="panel">
+  <h2>版面</h2>
+  <label>紙張 <select id="paper"><option>A4<option>A3</select></label>
+  <label>紙張方向 <select id="orient"><option value="p">直式<option value="l">橫式</select></label>
+  <label>橫向張數 <input id="cols" type="number" min="1" max="10" value="2"></label>
+  <label>縱向張數 <input id="rows" type="number" min="1" max="10" value="2"></label>
+  <label>留邊 (mm) <input id="margin" type="number" min="0" max="20" value="5"></label>
+  <label>底色 <input id="bg" type="color" value="#fff3bf"></label>
+  <div id="info"></div><div id="warn"></div>
+
+  <h2>範本</h2>
+  <div id="tpls"></div>
+  <small>更多版型：到 <a href="https://cormort.github.io/ppt-layout-generator/" target="_blank" rel="noopener">圖片排版產生器</a> 做好後匯出 SVG，用「＋圖片」加入再按「鋪滿版面」。<br>
+  手繪插圖：到 <a href="https://cormort.github.io/layer-paint/" target="_blank" rel="noopener">layer-paint</a> 畫好匯出 PNG，加入後勾「去白底」。</small>
+
+  <h2>加入</h2>
+  <button id="addText">＋文字</button>
+  <button onclick="file.click()">＋圖片</button>
+  <input id="file" type="file" accept="image/*" multiple hidden>
+
+  <h2>圖庫（點一下加入，符號可改顏色）</h2>
+  <div id="lib"></div>
+
+  <h2>選取的物件</h2>
+  <fieldset id="props" disabled>
+    <label>大小 <input id="size" type="range" min="1" max="100" step="0.5"></label>
+    <label>顏色 <input id="color" type="color"></label>
+    <label>字型 <select id="font">
+      <option value='system-ui,"PingFang TC","Microsoft JhengHei",sans-serif'>黑體
+      <option value='"Songti TC","PMingLiU",serif'>明體
+      <option value='"Kaiti TC","BiauKai","DFKai-SB",serif'>楷體
+      <option value='"Yuanti TC","Hiragino Maru Gothic ProN",sans-serif'>圓體
+    </select></label>
+    <label><span><input id="bold" type="checkbox"> 粗體</span>
+           <span><input id="vert" type="checkbox"> 直書</span>
+           <span><input id="stroke" type="checkbox"> 白框</span></label>
+    <label>文字框 <select id="frame">
+      <option value="">無<option value="box">色塊<option value="round">圓角<option value="pill">膠囊<option value="oval">橢圓
+      <option value="burst">爆炸<option value="bubble">對話框<option value="ribbon">緞帶<option value="double">雙線框<option value="dashed">虛線框
+    </select></label>
+    <label>框色 <input id="fcol" type="color"></label>
+    <label><span><input id="mul" type="checkbox"> 去白底（圖片）</span></label>
+    <button id="fill">鋪滿版面</button>
+    <button id="front">移到最上</button><button id="back">移到最下</button><button id="del">刪除</button>
+  </fieldset>
+
+  <h2>輸出</h2>
+  <button id="go">分割列印 / 存 PDF</button>
+  <small>列印對話框的紙張請選同一種（A4／A3）、縮放 100%、邊界「無」。每張虛線外是留邊，沿虛線裁掉後拼貼。<br>
+  雙擊文字可編輯；拖曳移動；Delete 刪除。內容自動存在此瀏覽器。</small>
+  <h2>專案檔</h2>
+  <button id="export">匯出</button>
+  <button onclick="imp.click()">匯入</button>
+  <input id="imp" type="file" accept=".json,application/json" hidden>
+  <button id="clear">清空重來</button>
+</div>
+
+<div id="stage"><div id="wrap"><div id="poster" class="poster"></div><div id="grid"></div></div></div>
+<div id="print"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const poster = $('poster'), KEYS = ['orient', 'cols', 'rows', 'margin', 'bg', 'paper'];
+const PAPER = { A4: [210, 297], A3: [297, 420] };
+let sel = null;
+
+// 每張紙扣掉留邊後的可印區 (cw×ch)，拼成 W×H 的成品（單位 mm）
+function tile([w, h], land, m, cols, rows) {
+  const [pw, ph] = land ? [h, w] : [w, h];
+  const cw = pw - 2 * m, ch = ph - 2 * m;
+  return { pw, ph, m, cw, ch, cols, rows, W: cw * cols, H: ch * rows };
+}
+console.assert(tile(PAPER.A4, false, 5, 2, 2).W === 400 && tile(PAPER.A4, false, 5, 2, 2).H === 574
+  && tile(PAPER.A4, true, 0, 3, 1).W === 891 && tile(PAPER.A3, true, 5, 2, 1).W === 820, 'tile() 算錯');
+
+const num = (id, lo, hi) => Math.min(hi, Math.max(lo, +$(id).value || lo));
+const layout = () => tile(PAPER[$('paper').value] || PAPER.A4,$('orient').value === 'l', num('margin', 0, 20), num('cols', 1, 10), num('rows', 1, 10));
+
+function render() {
+  const L = layout(), st = $('stage');
+  const s = Math.min((st.clientWidth - 40) / L.W, (st.clientHeight - 40) / L.H);
+  $('wrap').style.width = L.W * s + 'px';
+  $('wrap').style.height = L.H * s + 'px';
+  poster.style.background = $('bg').value;
+  $('grid').style.backgroundSize = `${100 / L.cols}% ${100 / L.rows}%`;
+  $('info').textContent = `成品 ${(L.W / 10).toFixed(1)} × ${(L.H / 10).toFixed(1)} cm，共 ${L.cols * L.rows} 張`;
+  save();
+}
+
+function data() {
+  const v = {};
+  for (const k of KEYS) v[k] = $(k).value;
+  return JSON.stringify({ v, html: poster.innerHTML });
+}
+
+// 專案檔可能來自別人：不直接塞 innerHTML，只照白名單重建文字與 data: 圖片，事件屬性與 script 一律丟掉
+function load(d) {
+  for (const k of KEYS) if (d.v?.[k] != null) $(k).value = d.v[k];
+  poster.innerHTML = '';
+  for (const s of new DOMParser().parseFromString(String(d.html || ''), 'text/html').body.children) {
+    const img = s.tagName === 'IMG', src = s.getAttribute('src') || '';
+    if (img ? !src.startsWith('data:image/') : s.tagName !== 'DIV') continue;
+    const el = img ? new Image() : document.createElement('div');
+    if (img) { el.src = src; el.draggable = false; } else el.textContent = s.textContent;
+    el.className = img ? 'el' : 'el text';
+    el.style.cssText = s.style.cssText.replace(/url\(/gi, '');
+    for (const k of ['color', 'font', 'frame', 'fc']) if (s.dataset[k]) el.dataset[k] = s.dataset[k];
+    poster.append(el);
+  }
+  select(null);
+}
+
+function save() {
+  try { localStorage.poster = data(); $('warn').textContent = ''; }
+  catch { $('warn').textContent = '⚠ 無法自動存檔（內容太大，或瀏覽器停用了儲存）'; }
+}
+
+function select(el) {
+  sel?.classList.remove('sel');
+  sel = el;
+  $('props').disabled = !el;
+  if (!el) return;
+  el.classList.add('sel');
+  $('size').value = parseFloat(el.style.fontSize || el.style.width);
+  $('color').value = el.dataset.color || '#000000';
+  $('font').value = el.dataset.font || $('font').options[0].value;
+  $('bold').checked = el.style.fontWeight === '700';
+  $('vert').checked = !!el.style.writingMode;
+  $('stroke').checked = !!el.style.webkitTextStroke;
+  $('mul').checked = el.style.mixBlendMode === 'multiply';
+  $('frame').value = el.dataset.frame || '';
+  $('fcol').value = el.dataset.fc || '#ffd43b';
+}
+
+function add(el) {
+  el.classList.add('el');
+  el.style.left = el.style.top = '10%';
+  poster.append(el);
+  select(el);
+  save();
+}
+
+function addText(s, size) {
+  const d = document.createElement('div');
+  d.className = 'text';
+  d.textContent = s;
+  d.style.fontSize = size + 'cqw';
+  add(d);
+}
+$('addText').onclick = () => addText('雙擊編輯文字', 8);
+
+// ponytail: 圖庫用 Unicode 符號與 emoji 當文字物件，零素材檔、放大不失真；要專屬插圖時再改成 SVG 圖檔
+for (const g of '★ ● ■ ▲ ♥ ✹ ✿ ➜ 🎉 🎊 🎈 🎁 🔥 💥 ⭐ 👍 📢 🏆 🎂 🎄 🧧 🏮 🌸 🍜 🍰 ☕ 🛒 💰 📞 📍 ⏰ 🚫 ⚠️ ❤️ ☀️ ♻️'.split(' ')) {
+  const b = document.createElement('button');
+  b.textContent = g;
+  b.onclick = () => addText(g, 15);
+  $('lib').append(b);
+}
+
+// 範本：[文字, top%, 字級cqw, 顏色, 白框?]，水平一律置中（全形字寬 1em、半形約 .55em）
+const STROKE = '-webkit-text-stroke:.12em #fff;paint-order:stroke fill;';
+const line = ([s, top, size, color, stroke]) => {
+  const w = [...s].reduce((a, c) => a + (c.charCodeAt(0) < 256 ? .55 : 1), 0) * size;
+  return `<div class="el text" data-color="${color}" style="left:${(100 - w) / 2}%;top:${top}%;font-size:${size}cqw;color:${color};font-weight:700;${stroke ? STROKE : ''}">${s}</div>`;
+};
+const TPLS = {
+  '特賣促銷': [['p', 2, 2, 5, '#ffe066'], [['🎉', 3, 10, '#000000'], ['年終大特賣', 13, 17, '#e03131', 1], ['全館商品', 33, 10, '#222222'], ['５折起', 43, 28, '#e03131', 1], ['活動期間 12/1 – 12/31', 74, 5.5, '#222222'], ['售完為止　敬請把握', 84, 6, '#1864ab']]],
+  '活動公告': [['p', 2, 2, 5, '#d0ebff'], [['📢', 4, 12, '#000000'], ['活動公告', 15, 18, '#1864ab', 1], ['社區中秋聯歡晚會', 34, 10.5, '#222222'], ['時間：9月25日 晚上6點', 52, 6, '#222222'], ['地點：社區活動中心', 60, 6, '#222222'], ['歡迎踴躍參加', 76, 11, '#e8590c', 1]]],
+  '恭賀榜單': [['p', 2, 2, 5, '#c92a2a'], [['恭賀', 6, 32, '#ffd43b'], ['王小明 同學', 36, 13, '#ffffff'], ['榮獲全國競賽', 52, 10, '#ffd43b'], ['第一名', 63, 22, '#ffd43b'], ['🏆', 83, 12, '#000000']]],
+  '徵人啟事': [['p', 2, 2, 5, '#ffffff'], [['誠徵', 6, 30, '#e03131'], ['門市人員', 33, 18, '#222222'], ['待優・供餐・彈性排班', 55, 7, '#222222'], ['意者內洽', 68, 13, '#1c7ed6'], ['📞 02-1234-5678', 86, 7, '#222222']]],
+  '紅布條': [['l', 4, 1, 5, '#e03131'], [['熱烈歡迎貴賓蒞臨指導', 22, 8.5, '#ffe066']]],
+};
+for (const name in TPLS) {
+  const b = document.createElement('button');
+  b.textContent = name;
+  b.onclick = () => {
+    if (poster.children.length && !confirm('套用範本會取代目前內容，確定？')) return;
+    const [v, lines] = TPLS[name];
+    KEYS.forEach((k, i) => $(k).value = v[i] ?? 'A4');
+    poster.innerHTML = lines.map(line).join('');
+    select(null);
+    render();
+  };
+  $('tpls').append(b);
+}
+
+$('file').onchange = e => {
+  for (const f of e.target.files) {
+    const r = new FileReader();
+    r.onload = () => {
+      const img = new Image();
+      img.src = r.result;
+      img.draggable = false;
+      img.style.width = '40%';
+      add(img);
+    };
+    r.readAsDataURL(f);
+  }
+  e.target.value = '';
+};
+
+poster.addEventListener('pointerdown', e => {
+  const el = e.target.closest('.el');
+  if (el?.isContentEditable) return;
+  select(el);
+  if (!el) return;
+  e.preventDefault();
+  const r = poster.getBoundingClientRect(), x0 = e.clientX, y0 = e.clientY;
+  const l0 = parseFloat(el.style.left), t0 = parseFloat(el.style.top);
+  const move = ev => {
+    el.style.left = l0 + (ev.clientX - x0) / r.width * 100 + '%';
+    el.style.top = t0 + (ev.clientY - y0) / r.height * 100 + '%';
+  };
+  const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); save(); };
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+});
+
+poster.addEventListener('dblclick', e => {
+  const el = e.target.closest('.text');
+  if (!el) return;
+  el.contentEditable = 'plaintext-only';
+  el.focus();
+  el.onblur = () => {
+    el.removeAttribute('contenteditable');
+    if (!el.textContent.trim()) { el.remove(); select(null); }
+    save();
+  };
+});
+
+const prop = (id, fn) => $(id).oninput = e => { if (sel) { fn(sel, e.target); save(); } };
+prop('size', (el, i) => el.tagName === 'IMG'
+  ? el.style.cssText += `;width:${i.value}%;height:auto;object-fit:fill`   // 調大小時解除「鋪滿」
+  : el.style.fontSize = i.value + 'cqw');
+// 鋪滿：圖片蓋滿整張海報並墊到最底，比例不同時裁掉多的邊（不變形）
+$('fill').onclick = () => {
+  if (sel.tagName !== 'IMG') return;
+  sel.style.cssText += ';left:0%;top:0%;width:100%;height:100%;object-fit:cover';
+  poster.prepend(sel);
+  save();
+};
+prop('color', (el, i) => el.style.color = el.dataset.color = i.value);
+prop('font', (el, i) => el.style.fontFamily = el.dataset.font = i.value);
+prop('bold', (el, i) => el.style.fontWeight = i.checked ? '700' : '');
+prop('vert', (el, i) => el.style.writingMode = i.checked ? 'vertical-rl' : '');
+prop('stroke', (el, i) => { el.style.webkitTextStroke = i.checked ? '.12em #fff' : ''; el.style.paintOrder = i.checked ? 'stroke fill' : ''; });
+// ponytail: 用色彩增值讓白色「看起來」透明，零運算；深色底上線條會跟著變暗，那時才需要真的去背
+prop('mul', (el, i) => el.style.mixBlendMode = i.checked ? 'multiply' : '');
+prop('frame',(el, i) => i.value ? el.dataset.frame = i.value : delete el.dataset.frame);
+prop('fcol', (el, i) => el.style.setProperty('--fc', el.dataset.fc = i.value));
+document.documentElement.style.setProperty('--burst', `polygon(${[...Array(32)].map((_, i) => {
+  const a = i * Math.PI / 16, r = i % 2 ? 38 : 50;
+  return `${(50 + r * Math.cos(a)).toFixed(1)}% ${(50 + r * Math.sin(a)).toFixed(1)}%`;
+})})`);
+$('front').onclick = () => { poster.append(sel); save(); };
+$('back').onclick = () => { poster.prepend(sel); save(); };
+$('del').onclick = () => { sel.remove(); select(null); save(); };
+$('clear').onclick = () => { if (confirm('確定清空整張海報？')) { poster.innerHTML = ''; select(null); save(); } };
+
+addEventListener('keydown', e => {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && sel && !sel.isContentEditable
+      && !/INPUT|SELECT/.test(document.activeElement.tagName)) $('del').onclick();
+});
+
+// 分割列印：每張紙放一份完整海報的複本，位移後由 .win 裁出該張的範圍
+$('go').onclick = () => {
+  const L = layout(), out = $('print');
+  out.innerHTML = '';
+  $('page').textContent = `@page{size:${L.pw}mm ${L.ph}mm;margin:0}`;
+  for (let r = 0; r < L.rows; r++) for (let c = 0; c < L.cols; c++) {
+    const sheet = document.createElement('div'), win = document.createElement('div'), p = poster.cloneNode(true);
+    sheet.className = 'sheet';
+    // ponytail: 高度少 0.3mm 避免捨入誤差多吐一張白紙；若印表機仍多出空白頁再調大
+    sheet.style.cssText = `width:${L.pw}mm;height:${L.ph - 0.3}mm;padding:${L.m}mm`;
+    win.className = 'win';
+    p.removeAttribute('id');
+    p.querySelectorAll('.sel').forEach(e => e.classList.remove('sel'));
+    p.style.cssText += `;inset:auto;left:${-c * L.cw}mm;top:${-r * L.ch}mm;width:${L.W}mm;height:${L.H}mm`;
+    win.append(p);
+    sheet.append(win);
+    if (L.m >= 4) sheet.insertAdjacentHTML('beforeend', `<span class="tag" style="left:${L.m}mm">第 ${r + 1} 列 第 ${c + 1} 張</span>`);
+    out.append(sheet);
+  }
+  print();
+};
+
+$('export').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data()], { type: 'application/json' }));
+  a.download = '海報.poster.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+$('imp').onchange = async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f || (poster.children.length && !confirm('匯入會取代目前內容，確定？'))) return;
+  try { load(JSON.parse(await f.text())); render(); }
+  catch { alert('這不是海報專案檔'); }
+};
+
+try { const d = JSON.parse(localStorage.poster || 'null'); if (d) load(d); } catch {}
+for (const k of KEYS) $(k).onchange = render;
+addEventListener('resize', render);
+render();
+</script>

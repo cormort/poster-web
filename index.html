@@ -28,7 +28,7 @@ button,select,input{font:inherit;color:inherit}
 #bar>#go{padding:8px 18px;font-weight:700;background:var(--ac);color:#fff;border-radius:999px;box-shadow:0 2px 8px #d6336c55}
 #bar>#go:hover{background:#c2255c}
 #main{flex:1;display:flex;min-height:0}
-#panel{width:276px;flex:none;padding:10px;background:var(--bg);border-left:1px solid var(--bd);overflow:auto}
+#panel{position:relative;z-index:2;width:276px;flex:none;padding:10px;background:var(--bg);border-left:1px solid var(--bd);overflow:auto}
 #panel section{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 #panel h2{font-size:12px;margin:0 0 8px;color:var(--mut);letter-spacing:1px}
 #panel label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:7px 0}
@@ -80,7 +80,8 @@ small{color:var(--mut);line-height:1.6;display:block;margin-top:6px}
 .el{position:absolute;cursor:move;user-select:none;touch-action:none;-webkit-user-drag:none}
 .el.text{white-space:pre;line-height:1.2;isolation:isolate}
 /* 特效框：全用 em，跟著字級縮放；--fc 是框色 */
-.text[data-frame]{padding:.2em .5em;background:var(--fc,#ffd43b)}
+/* --fg 是框的填色（可以是漸層），--fc 是單色（給線框與對話框尾巴用） */
+.text[data-frame]{padding:.2em .5em;background:var(--fg,var(--fc,#ffd43b))}
 .text[data-frame=round]{border-radius:.3em}
 .text[data-frame=pill]{border-radius:99em;padding:.2em .8em}
 .text[data-frame=oval]{border-radius:50%;padding:.5em .9em}
@@ -89,14 +90,44 @@ small{color:var(--mut);line-height:1.6;display:block;margin-top:6px}
 .text[data-frame=burst],.text[data-frame=ribbon]{background:none}
 .text[data-frame=burst]{padding:.9em 1.1em}
 .text[data-frame=ribbon]{padding:.2em 1.1em}
-.text[data-frame=burst]::before,.text[data-frame=ribbon]::before{content:'';position:absolute;inset:0;z-index:-1;background:var(--fc,#ffd43b)}
+.text[data-frame=burst]::before,.text[data-frame=ribbon]::before{content:'';position:absolute;inset:0;z-index:-1;background:var(--fg,var(--fc,#ffd43b))}
 .text[data-frame=burst]::before{clip-path:var(--burst)}
 .text[data-frame=ribbon]::before{clip-path:polygon(0 0,100% 0,calc(100% - .5em) 50%,100% 100%,0 100%,.5em 50%)}
 .text[data-frame=bubble]{border-radius:.4em}
 .text[data-frame=bubble]::after{content:'';position:absolute;left:18%;top:calc(100% - 1px);border:.45em solid transparent;border-top-color:var(--fc,#ffd43b);border-bottom:0;border-right-width:.1em}
 .el.text[contenteditable]{cursor:text;user-select:text;outline:2px dashed #d6336c}
 /* 選取框獨立畫在上層：形狀圖框用 clip-path 會把物件自己的 outline 一起裁掉 */
-#selbox{position:absolute;display:none;border:2px solid #1c7ed6;pointer-events:none}
+#selbox{position:absolute;display:none;border:1.5px solid #1c7ed6;pointer-events:none}
+/* 控制點：四角等比縮放、四邊拉伸、上方圓點旋轉；選取框跟著物件一起旋轉與傾斜 */
+#selbox i{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;background:#fff;border:1.5px solid #1c7ed6;border-radius:3px;pointer-events:auto;touch-action:none}
+#selbox [data-h=nw]{left:0;top:0;cursor:nwse-resize}#selbox [data-h=se]{left:100%;top:100%;cursor:nwse-resize}
+#selbox [data-h=ne]{left:100%;top:0;cursor:nesw-resize}#selbox [data-h=sw]{left:0;top:100%;cursor:nesw-resize}
+#selbox [data-h=n]{left:50%;top:0;cursor:ns-resize}#selbox [data-h=s]{left:50%;top:100%;cursor:ns-resize}
+#selbox [data-h=e]{left:100%;top:50%;cursor:ew-resize}#selbox [data-h=w]{left:0;top:50%;cursor:ew-resize}
+#selbox [data-h=n],#selbox [data-h=s]{width:18px;height:8px;margin:-4px 0 0 -9px}
+#selbox [data-h=e],#selbox [data-h=w]{width:8px;height:18px;margin:-9px 0 0 -4px}
+#selbox [data-h=rot]{left:50%;top:-30px;border-radius:50%;background:#1c7ed6;cursor:grab}
+#selbox::before{content:'';position:absolute;left:50%;top:-24px;height:24px;border-left:1.5px solid #1c7ed6}
+/* 漸層文字：背景只畫在字形上 */
+.ink{display:inline-block;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.ch{display:inline-block}
+[hidden]{display:none!important}
+/* 顏色面板 */
+.stops{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:7px 0}
+.stops span{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--mut)}
+#panel .stops input.act{outline:2px solid var(--ac2);outline-offset:1px}
+#panel #hex{width:84px;padding:4px 6px;border:1px solid var(--bd);border-radius:7px;font-family:ui-monospace,monospace}
+#gpre button{width:30px;height:22px;padding:0;margin:1px;border:1px solid #999;border-radius:4px}
+/* 面板位置：右（原本）、左、上 */
+.seg{display:inline-flex;border-radius:8px;overflow:hidden;background:var(--soft)}
+.seg button{padding:6px 9px;border:0;background:none;cursor:pointer}
+.seg button.on{background:#e0e4ff;color:var(--ac2)}
+body[data-pp=left] #panel{order:-1;border-left:0;border-right:1px solid var(--bd)}
+body[data-pp=top] #main{flex-direction:column}
+body[data-pp=top] #panel{order:-1;width:auto;max-height:44vh;display:flex;gap:10px;align-items:flex-start;border-left:0;border-bottom:1px solid var(--bd)}
+body[data-pp=top] #panel section{flex:0 0 268px;margin:0}
+body[data-pp=top] #warn:empty{display:none}
+body[data-pp=top] #warn{flex:0 0 160px}
 /* 圖片形狀圖框：前六種用圓角（可配白邊），後六種用裁切 */
 img[data-shape]{object-fit:cover}
 img[data-shape=round]{border-radius:8%}
@@ -128,6 +159,7 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
 
 <div id="bar">
   <b>海報輸出</b>
+  <button id="undo" title="復原（Ctrl/⌘+Z）">↶ 復原</button>
   <button id="addText">＋文字</button>
   <button onclick="file.click()">＋圖片</button>
   <input id="file" type="file" accept="image/*" multiple hidden>
@@ -156,13 +188,14 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
     <b>列印</b>：對話框的紙張請選同一種（A4／A3）、縮放 100%、邊界「無」。<br>
     <b>拼貼</b>：每張右側、下方的淡色帶是黏貼區（紅虛線＝黏貼線）。下一張沿左邊黑虛線裁掉白邊，疊上去貼齊紅線；先把每一列橫向貼好，再把下一列裁掉上邊、貼到上一列。重疊設 0 就改成四邊全裁、對齊拼接。</small>
   </div></details>
+  <span class="seg" title="面板位置"><button data-pp="left" title="面板放左邊">◧ 左</button><button data-pp="top" title="面板放上方">⬒ 上</button><button data-pp="right" title="面板放右邊">◨ 右</button></span>
   <span class="sp"></span>
   <span id="info"></span>
   <button id="go">分割列印 / 存 PDF</button>
 </div>
 
 <div id="main">
-<div id="stage"><div id="wrap"><div id="poster" class="poster"></div><div id="grid"></div><div id="selbox"></div></div></div>
+<div id="stage"><div id="wrap"><div id="poster" class="poster"></div><div id="grid"></div><div id="selbox"><i data-h="rot" title="旋轉（Shift 每 15°）"></i><i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i></div></div></div>
 <div id="panel">
   <div id="warn"></div>
   <section>
@@ -171,7 +204,6 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
     <label>大小 <input id="size" type="range" min="1" max="100" step="0.5"></label>
     <label>旋轉 <input id="rot" type="range" min="-180" max="180" step="1"></label>
     <label>不透明度 <input id="op" type="range" min="10" max="100" step="5"></label>
-    <label>顏色 <input id="color" type="color"></label>
     <label>字型 <select id="font">
       <option value='system-ui,"PingFang TC","Microsoft JhengHei",sans-serif'>黑體
       <option value='"Songti TC","PMingLiU",serif'>明體
@@ -198,7 +230,6 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
       <option value="">無<option value="box">色塊<option value="round">圓角<option value="pill">膠囊<option value="oval">橢圓
       <option value="burst">爆炸<option value="bubble">對話框<option value="ribbon">緞帶<option value="double">雙線框<option value="dashed">虛線框
     </select></label>
-    <label>框色 <input id="fcol" type="color"></label>
     <label>圖片形狀 <select id="shape">
       <option value="">無<option value="round">圓角<option value="circle">圓形<option value="oval">橢圓<option value="arch">拱門<option value="leaf">葉形<option value="blob">水滴
       <option value="diamond">菱形<option value="hex">六邊形<option value="star">星形<option value="heart">愛心<option value="burst">爆炸<option value="slant">斜切
@@ -207,15 +238,47 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
       <label class="tg" title="圖片加白邊與陰影"><input id="edge" type="checkbox"><span>白邊</span></label>
       <label class="tg" title="讓圖片的白色背景消失"><input id="mul" type="checkbox"><span>去白底</span></label>
     </div>
+    <label>形狀運算 <span><button id="union" title="兩個形狀合成一個">聯集</button><button id="inter" title="只留下重疊的部分">交集</button><button id="sub" title="從第一個形狀挖掉第二個">減去</button></span></label>
     <button id="fill">鋪滿版面</button><button id="front">移到最上</button><button id="back">移到最下</button><button id="del">刪除</button>
   </fieldset>
   </section>
 
   <section>
-  <h2>色票</h2>
-  <label>套用到 <select id="ptarget"><option value="text">文字／形狀<option value="frame">文字框<option value="bg">底色</select>
-    <select id="pn"><option>12<option>24<option>36</select> 色</label>
+  <h2>變形</h2>
+  <fieldset id="tfs" disabled>
+    <label>寬度 % <input id="sx" type="range" min="10" max="300" step="1"></label>
+    <label>高度 % <input id="sy" type="range" min="10" max="300" step="1"></label>
+    <label>水平傾斜 <input id="kx" type="range" min="-60" max="60" step="1"></label>
+    <label>垂直傾斜 <input id="ky" type="range" min="-60" max="60" step="1"></label>
+    <label>上下透視 <input id="px" type="range" min="-70" max="70" step="1"></label>
+    <label>左右透視 <input id="py" type="range" min="-70" max="70" step="1"></label>
+    <button id="flipH">⇋ 水平翻轉</button><button id="flipV">⇵ 垂直翻轉</button><button id="tfreset">重設變形</button>
+    <label>文字彎曲 <select id="warp">
+      <option value="">無<option value="arcUp">弧形 ⌒<option value="arcDown">弧形 ⌣<option value="circle">圓形
+      <option value="wave">波浪<option value="wave2">雙波浪<option value="bulge">膨脹<option value="pinch">挾縮<option value="grow">漸大<option value="shrink">漸小
+    </select></label>
+    <label>彎曲強度 <input id="wa" type="range" min="0" max="100" step="1"></label>
+    <small>拖曳選取框：四角＝等比縮放，四邊＝拉伸變形，上方圓點＝旋轉（按住 Shift 每 15° 對齊）。</small>
+  </fieldset>
+  </section>
+
+  <section id="colsec">
+  <h2>顏色</h2>
+  <label>套用到 <select id="ptarget"><option value="text">文字／形狀<option value="frame">文字框<option value="bg">底色</select></label>
+  <label>填色 <select id="ftype"><option value="solid">純色<option value="linear">線性漸層<option value="radial">放射漸層<option value="two">雙色（硬切）<option value="three">三色漸層<option value="rainbow">彩虹</select></label>
+  <div class="stops">
+    <span data-show="solid linear radial two three">顏色1 <input id="c1" type="color" value="#e03131"></span>
+    <span data-show="three">中間 <input id="c3" type="color" value="#ffd43b"></span>
+    <span data-show="linear radial two three">顏色2 <input id="c2" type="color" value="#4263eb"></span>
+    <button id="swap" data-show="linear radial two three" title="對調顏色1、顏色2">⇄</button>
+  </div>
+  <label data-show="solid linear radial two three">色碼 <input id="hex" type="text" maxlength="7" spellcheck="false" placeholder="#rrggbb"></label>
+  <label data-show="linear two three rainbow">角度 <input id="fang" type="range" min="0" max="360" step="5"></label>
+  <label data-show="linear radial two three">位置 <input id="fmid" type="range" min="0" max="100" step="1"></label>
+  <div id="gpre"></div>
+  <label>色票 <select id="pn"><option>12<option>24<option>36</select></label>
   <div id="pal"></div>
+  <small>色票會套到外框標示的那個顏色（點一下顏色1／中間／顏色2 切換）。</small>
   </section>
 
   <section>
@@ -228,6 +291,7 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
   <label>黏貼重疊 (mm) <input id="overlap" type="number" min="0" max="30" value="10"></label>
   <label>底色 <input id="bgpick" type="color" value="#fff3bf"></label>
   <input id="bg" type="hidden" value="#fff3bf">
+  <input id="bgfill" type="hidden" value="">
   </section>
 </div>
 </div>
@@ -235,7 +299,7 @@ img[data-edge]{border:1.2cqw solid #fff;box-shadow:0 .6cqw 1.8cqw #0005}
 
 <script>
 const $ = id => document.getElementById(id);
-const poster = $('poster'), KEYS = ['orient', 'cols', 'rows', 'margin', 'bg', 'paper', 'overlap'];
+const poster = $('poster'), KEYS = ['orient', 'cols', 'rows', 'margin', 'bg', 'paper', 'overlap', 'bgfill'];
 const PAPER = { A4: [210, 297], A3: [297, 420] };
 let sel = null;
 
@@ -262,7 +326,10 @@ function render() {
   // 底色可能來自匯入的專案檔：只接受 #rrggbb 或 transparent
   const b = $('bg').value;
   if (/^#[0-9a-f]{6}$/i.test(b)) $('bgpick').value = b; else $('bg').value = 'transparent';
-  poster.style.background = $('bg').value;
+  const bf = parseFill($('bgfill').value);
+  if (!bf) $('bgfill').value = '';
+  poster.style.background = bf && bf.t !== 'solid' ? fillCss(bf) : $('bg').value;
+  if ($('ptarget').value === 'bg') loadFillUI();
   let g = '';
   for (let c = 1; c < L.cols; c++) g += `<i style="left:${c * L.sx / L.W * 100}%;top:0;bottom:0;width:3px;background:linear-gradient(to right,#000 1px,#fff 1px)"></i>`;
   for (let r = 1; r < L.rows; r++) g += `<i style="top:${r * L.sy / L.H * 100}%;left:0;right:0;height:3px;background:linear-gradient(#000 1px,#fff 1px)"></i>`;
@@ -280,6 +347,7 @@ function data() {
 
 // 專案檔可能來自別人：不直接塞 innerHTML，只照白名單重建文字與 data: 圖片，事件屬性與 script 一律丟掉
 function load(d) {
+  $('bgfill').value = '';   // 舊專案檔沒有這一欄，不能沿用上一份的漸層底色
   for (const k of KEYS) if (d.v?.[k] != null) $(k).value = d.v[k];
   poster.innerHTML = '';
   for (const s of new DOMParser().parseFromString(String(d.html || ''), 'text/html').body.children) {
@@ -289,34 +357,56 @@ function load(d) {
     if (img) { el.src = src; el.draggable = false; } else el.textContent = s.textContent;
     el.className = img ? 'el' : 'el text';
     el.style.cssText = s.style.cssText.replace(/url\(/gi, '');
-    for (const k of ['color', 'font', 'frame', 'fc', 'shape', 'edge', 'art']) if (s.dataset[k]) el.dataset[k] = s.dataset[k];
+    for (const k of ['color', 'font', 'frame', 'fc', 'shape', 'edge', 'art', 'body', 'vb', 'fill', 'ff', 'warp', 'wa', ...Object.keys(TF)]) if (s.dataset[k]) el.dataset[k] = s.dataset[k];
     poster.append(el);
+    if (!img) paintText(el);   // 彎曲字與漸層字的 span 不存，從 data-* 重畫
   }
   select(null);
 }
 
-function mark() {
-  const b = $('selbox');
-  if (!sel) { b.style.display = 'none'; return; }
-  const r = sel.getBoundingClientRect(), w = $('wrap').getBoundingClientRect();
-  b.style.cssText = `display:block;left:${r.left - w.left}px;top:${r.top - w.top}px;width:${r.width}px;height:${r.height}px`;
+// 變形：寬高縮放（負值＝翻轉）、傾斜、透視，存在 data-*，組成 transform；旋轉另用 rotate 屬性（舊檔相容）
+const TF = { sx: 1, sy: 1, kx: 0, ky: 0, px: 0, py: 0 };
+const tfv = (el, k) => el.dataset[k] != null && el.dataset[k] !== '' && isFinite(el.dataset[k]) ? +el.dataset[k] : TF[k];
+function applyTf(el) {
+  const v = k => tfv(el, k), p = [];
+  // 透視距離用 cqw（相對海報寬），列印縮放時跟著等比
+  if (v('px') || v('py')) p.push(`perspective(80cqw) rotateX(${v('px')}deg) rotateY(${v('py')}deg)`);
+  if (v('kx')) p.push(`skewX(${v('kx')}deg)`);
+  if (v('ky')) p.push(`skewY(${v('ky')}deg)`);
+  if (v('sx') !== 1 || v('sy') !== 1) p.push(`scale(${v('sx')},${v('sy')})`);
+  el.style.transform = p.join(' ');
 }
 
+function mark() {
+  const b = $('selbox');
+  if (!sel || !sel.isConnected) { b.style.display = 'none'; return; }
+  // 用物件未變形前的框，套上同樣的旋轉與傾斜（透視不套，框只是近似）
+  const v = k => tfv(sel, k), W = sel.offsetWidth, H = sel.offsetHeight;
+  const w = W * Math.abs(v('sx')), h = H * Math.abs(v('sy')), cx = sel.offsetLeft + W / 2, cy = sel.offsetTop + H / 2;
+  b.style.cssText = `display:block;left:${cx - w / 2}px;top:${cy - h / 2}px;width:${w}px;height:${h}px;rotate:${sel.style.rotate || '0deg'};transform:skewX(${v('kx')}deg) skewY(${v('ky')}deg)`;
+}
+
+// ponytail: 復原存的是整份快照（最多 40 步），海報很大時吃記憶體；真的卡再改成只存差異
+let hist = [], cur = null, restoring = false, lastPush = 0;
 function save() {
   mark();
-  try { localStorage.poster = data(); $('warn').textContent = ''; }
+  const d = data();
+  if (d !== cur) {
+    // 拖滑桿會連續觸發，0.5 秒內的變動併成一步
+    if (cur !== null && !restoring && Date.now() - lastPush > 500) { hist.push(cur); lastPush = Date.now(); if (hist.length > 40) hist.shift(); }
+    cur = d;
+  }
+  try { localStorage.poster = d; $('warn').textContent = ''; }
   catch { $('warn').textContent = '⚠ 無法自動存檔（內容太大，或瀏覽器停用了儲存）'; }
 }
 
 function select(el) {
-  sel?.classList.remove('sel');
   sel = el;
-  $('props').disabled = !el;
+  $('props').disabled = $('tfs').disabled = !el;
   mark();
+  loadFillUI();
   if (!el) return;
-  el.classList.add('sel');
   $('size').value = parseFloat(el.style.fontSize || el.style.width);
-  $('color').value = el.dataset.color || '#000000';
   $('font').value = el.dataset.font || $('font').options[0].value;
   $('bold').checked = +el.style.fontWeight >= 700;
   $('vert').checked = !!el.style.writingMode;
@@ -330,7 +420,11 @@ function select(el) {
   $('shape').value = el.dataset.shape || '';
   $('edge').checked = !!el.dataset.edge;
   $('frame').value = el.dataset.frame || '';
-  $('fcol').value = el.dataset.fc || '#ffd43b';
+  for (const k of ['kx', 'ky', 'px', 'py']) $(k).value = tfv(el, k);
+  $('sx').value = Math.abs(tfv(el, 'sx')) * 100;
+  $('sy').value = Math.abs(tfv(el, 'sy')) * 100;
+  $('warp').value = el.dataset.warp || '';
+  $('wa').value = el.dataset.wa ?? 50;
 }
 
 function add(el) {
@@ -493,6 +587,7 @@ for (const name in TPLS) {
     if (poster.children.length && !confirm('套用範本會取代目前內容，確定？')) return;
     const [v, bgArt, lines] = TPLS[name];
     KEYS.forEach((k, i) => $(k).value = v[i] ?? $(k).value);   // 範本沒指定的（紙張、重疊）維持現狀
+    $('bgfill').value = '';
     poster.innerHTML = bgArt + lines.map(line).join('');
     select(null);
     render();
@@ -518,6 +613,12 @@ $('file').onchange = e => {
 poster.addEventListener('pointerdown', e => {
   const el = e.target.closest('.el');
   if (el?.isContentEditable) return;
+  if (pendingOp) {
+    const op = pendingOp;
+    pendingOp = null;
+    $('warn').textContent = '';
+    if (el && el !== sel && sel && el.tagName === 'IMG' && artOf(el)) { combine(sel, el, op); return; }
+  }
   select(el);
   if (!el || el.style.objectFit === 'cover') return;   // 鋪滿的底圖只選取、不拖動，免得誤移
   e.preventDefault();
@@ -536,16 +637,22 @@ poster.addEventListener('pointerdown', e => {
 poster.addEventListener('dblclick', e => {
   const el = e.target.closest('.text');
   if (!el) return;
+  el.textContent = el.textContent;   // 編輯時先攤平成純文字，離開時再重畫彎曲／漸層
   el.contentEditable = 'plaintext-only';
   el.focus();
   el.onblur = () => {
     el.removeAttribute('contenteditable');
-    if (!el.textContent.trim()) { el.remove(); select(null); }
+    if (!el.textContent.trim()) { el.remove(); select(null); } else paintText(el);
     save();
   };
 });
 
-const prop = (id, fn) => $(id).oninput = e => { if (sel) { fn(sel, e.target); save(); } };
+const prop = (id, fn) => $(id).oninput = e => {
+  if (!sel) return;
+  fn(sel, e.target);
+  if (sel.classList.contains('text')) paintText(sel);   // 字型、字級、直書會改變字的位置
+  save();
+};
 prop('size', (el, i) => {
   if (el.tagName !== 'IMG') return el.style.fontSize = i.value + 'cqw';
   el.style.width = i.value + '%';
@@ -577,20 +684,24 @@ const ARTS = {
   tri:    [200, 174, c => `<path d="M100 0L200 174H0Z" fill="${c}"/>`],
   bubble: [200, 160, c => `<path d="M20 0H180a20 20 0 0 1 20 20V100a20 20 0 0 1-20 20H90L50 160V120H20a20 20 0 0 1-20-20V20A20 20 0 0 1 20 0Z" fill="${c}"/>`],
 };
-const artSrc = (k, c) => {
-  const [w, h, f] = ARTS[k];
-  return 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${f(c)}</svg>`);
+const artOf = el => ARTS[el.dataset.art]
+  || (el.dataset.body && [...(el.dataset.vb || '').split(' ').map(Number), c => el.dataset.body.replaceAll('{c}', c)]);
+const artSrc = ([w, h, f], c, g) => {
+  // 漸層：把形狀畫成白色遮罩，再用一塊鋪滿整個畫布的漸層透過遮罩露出來；
+  // 這樣線條（高度為 0 的路徑）和合併後的形狀也能正確上漸層
+  const body = g && g.t !== 'solid'
+    ? `<defs>${svgGrad(g, w, h)}<mask id="sm" maskUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}">${f('#fff')}</mask></defs><rect width="${w}" height="${h}" fill="url(#sg)" mask="url(#sm)"/>`
+    : f(c);
+  return 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`);
 };
-function setColor(el, v) {
-  el.dataset.color = v;
-  if (ARTS[el.dataset.art]) el.src = artSrc(el.dataset.art, v); else el.style.color = v;
-}
+const refreshArt = el => { el.src = artSrc(artOf(el), el.dataset.color || '#e03131', parseFill(el.dataset.fill)); };
+const setColor = (el, v) => setFill(el, solid(v));
 for (const k in ARTS) {
   const b = document.createElement('button');
-  b.innerHTML = `<img src="${artSrc(k, '#334155')}" alt="${k}">`;
+  b.innerHTML = `<img src="${artSrc(ARTS[k], '#334155')}" alt="${k}">`;
   b.onclick = () => {
     const im = new Image();
-    im.src = artSrc(k, im.dataset.color = '#e03131');
+    im.src = artSrc(ARTS[k], im.dataset.color = '#e03131');
     im.dataset.art = k;
     im.draggable = false;
     im.style.width = (ARTS[k][1] === 40 ? 40 : 25) + '%';
@@ -598,7 +709,47 @@ for (const k in ARTS) {
   };
   $('shapes').append(b);
 }
-prop('color', (el, i) => setColor(el, i.value));
+
+// 形狀運算：不算幾何，而是把兩個形狀畫進同一張 SVG，用遮罩得到聯集／交集／減去的結果。
+// 結果仍是一個可換色、可縮放旋轉、可再拿去運算的形狀。
+// ponytail: 遮罩做法的結果是單色且沒有真正的路徑；要匯出向量輪廓給割字機那類用途時才需要幾何函式庫
+let pendingOp = null;
+const OPS = { union: '聯集', inter: '交集', sub: '減去' };
+function combine(a, b, op) {
+  const P = poster.getBoundingClientRect(), n = v => +v.toFixed(2);
+  const part = (e, c) => {
+    const [vw, vh, f] = artOf(e), w = parseFloat(e.style.width) / 100 * P.width, h = w * vh / vw;
+    const x = parseFloat(e.style.left) / 100 * P.width, y = parseFloat(e.style.top) / 100 * P.height;
+    const v = k => tfv(e, k), cx = n(w / 2), cy = n(h / 2);
+    // 與 CSS 相同順序：以中心為原點 旋轉 → 傾斜 → 縮放（透視無法在平面 SVG 表達，略過）
+    return `<g transform="translate(${n(x)} ${n(y)}) translate(${cx} ${cy}) rotate(${parseFloat(e.style.rotate) || 0}) skewX(${v('kx')}) skewY(${v('ky')}) scale(${v('sx')} ${v('sy')}) translate(${-cx} ${-cy}) scale(${w / vw} ${h / vh})">${f(c)}</g>`;
+  };
+  const box = e => { const r = e.getBoundingClientRect(); return [r.left - P.left, r.top - P.top, r.right - P.left, r.bottom - P.top]; };
+  let [x0, y0, x1, y1] = box(a);
+  if (op === 'union') { const q = box(b); x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[2]); y1 = Math.max(y1, q[3]); }
+  const w = x1 - x0, h = y1 - y0, id = 'm' + Math.random().toString(36).slice(2, 8), area = `x="${n(x0)}" y="${n(y0)}" width="${n(w)}" height="${n(h)}"`;
+  const inner = op === 'union' ? part(a, '{c}') + part(b, '{c}')
+    : `<mask id="${id}" maskUnits="userSpaceOnUse" ${area}>${op === 'sub' ? `<rect ${area} fill="#fff"/>${part(b, '#000')}` : part(b, '#fff')}</mask><g mask="url(#${id})">${part(a, '{c}')}</g>`;
+  const im = new Image();
+  im.className = 'el';
+  im.draggable = false;
+  im.dataset.vb = `${n(w)} ${n(h)}`;
+  im.dataset.body = `<g transform="translate(${n(-x0)} ${n(-y0)})">${inner}</g>`;
+  im.style.cssText = `left:${x0 / P.width * 100}%;top:${y0 / P.height * 100}%;width:${w / P.width * 100}%`;
+  if (a.style.opacity) im.style.opacity = a.style.opacity;
+  if (a.dataset.fill) im.dataset.fill = a.dataset.fill;
+  im.dataset.color = a.dataset.color || '#e03131';
+  refreshArt(im);
+  a.replaceWith(im);
+  b.remove();
+  select(im);
+  save();
+}
+for (const op in OPS) $(op).onclick = () => {
+  if (!sel || sel.tagName !== 'IMG' || !artOf(sel)) { $('warn').textContent = '請先選取一個形狀（「形狀」選單裡的線條、箭號、外框、色塊）'; return; }
+  pendingOp = op;
+  $('warn').textContent = `已選第一個形狀，請點選要${OPS[op]}的第二個形狀`;
+};
 prop('font', (el, i) => el.style.fontFamily = el.dataset.font = i.value);
 prop('bold', (el, i) => el.style.fontWeight = i.checked ? '700' : '');
 prop('vert', (el, i) => el.style.writingMode = i.checked ? 'vertical-rl' : '');
@@ -609,20 +760,129 @@ prop('strike', deco);
 prop('rot', (el, i) => el.style.rotate = +i.value ? i.value + 'deg' : '');
 prop('stroke', (el, i) => { el.style.webkitTextStroke = i.checked ? '.12em #fff' : ''; el.style.paintOrder = i.checked ? 'stroke fill' : ''; });
 prop('op', (el, i) => el.style.opacity = i.value / 100);
-$('bgpick').oninput = e => { $('bg').value = e.target.value; render(); };
+$('bgpick').oninput = e => { $('bg').value = e.target.value; $('bgfill').value = ''; render(); };
+
+// ── 填色：純色／線性／放射／雙色／三色／彩虹 ──
+// 存成字串「種類|角度|位置|顏色1|顏色2|中間色」；專案檔可能來自別人，讀回時逐欄驗證，只接受 #rrggbb 與 transparent
+const FILLS = ['solid', 'linear', 'radial', 'two', 'three', 'rainbow'];
+const RAINBOW = ['#ff004c', '#ff8a00', '#ffe600', '#2ee66b', '#00b3ff', '#7a3cff'];
+const HEX6 = /^#[0-9a-f]{6}$/i, isCol = c => HEX6.test(c) || c === 'transparent';
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+function parseFill(s) {
+  const [t, a, m, c1, c2, c3] = String(s || '').split('|');
+  if (!FILLS.includes(t) || ![c1, c2, c3].every(isCol)) return null;
+  return { t, a: clamp(+a || 0, 0, 360), m: isFinite(+m) && m !== '' ? clamp(+m, 0, 100) : 50, c1, c2, c3 };
+}
+const encFill = f => [f.t, f.a, f.m, f.c1, f.c2, f.c3].join('|');
+const solid = c => ({ t: 'solid', a: 0, m: 50, c1: c, c2: c, c3: c });
+function fillCss(f) {
+  const { t, a, m, c1, c2, c3 } = f;
+  if (t === 'linear') return `linear-gradient(${a}deg,${c1},${m}%,${c2})`;
+  if (t === 'radial') return `radial-gradient(circle,${c1},${m}%,${c2})`;
+  if (t === 'two') return `linear-gradient(${a}deg,${c1} ${m}%,${c2} ${m}%)`;
+  if (t === 'three') return `linear-gradient(${a}deg,${c1},${c3} ${m}%,${c2})`;
+  if (t === 'rainbow') return `linear-gradient(${a}deg,${RAINBOW})`;
+  return c1;
+}
+function mix(a, b) {
+  if (!HEX6.test(a) || !HEX6.test(b)) return HEX6.test(a) ? a : b;
+  return '#' + [1, 3, 5].map(i => Math.round((parseInt(a.substr(i, 2), 16) + parseInt(b.substr(i, 2), 16)) / 2).toString(16).padStart(2, '0')).join('');
+}
+// SVG 沒有 CSS 的「色彩中點」，改用中間多插一個混色色標來近似
+function gradStops({ t, m, c1, c2, c3 }) {
+  m /= 100;
+  if (t === 'two') return [[0, c1], [m, c1], [m, c2], [1, c2]];
+  if (t === 'three') return [[0, c1], [m, c3], [1, c2]];
+  if (t === 'rainbow') return RAINBOW.map((c, i) => [i / (RAINBOW.length - 1), c]);
+  return [[0, c1], [m, mix(c1, c2)], [1, c2]];
+}
+function svgGrad(g, w, h) {
+  const st = gradStops(g).map(([o, c]) => `<stop offset="${o.toFixed(3)}" stop-color="${c === 'transparent' ? '#000' : c}"${c === 'transparent' ? ' stop-opacity="0"' : ''}/>`).join('');
+  if (g.t === 'radial') return `<radialGradient id="sg" gradientUnits="userSpaceOnUse" cx="${w / 2}" cy="${h / 2}" r="${(Math.hypot(w, h) / 2).toFixed(1)}">${st}</radialGradient>`;
+  // 換算 CSS 角度：0° 朝上、順時針；漸層線長度與 CSS 規格相同
+  const a = g.a * Math.PI / 180, dx = Math.sin(a), dy = -Math.cos(a), L = Math.abs(w / 2 * dx) + Math.abs(h / 2 * dy), f = v => v.toFixed(1);
+  return `<linearGradient id="sg" gradientUnits="userSpaceOnUse" x1="${f(w / 2 - dx * L)}" y1="${f(h / 2 - dy * L)}" x2="${f(w / 2 + dx * L)}" y2="${f(h / 2 + dy * L)}">${st}</linearGradient>`;
+}
+function setFill(el, f) {
+  if (el.tagName === 'IMG' && !artOf(el)) { $('warn').textContent = '照片不能換顏色，只有文字與「形狀」可以'; return; }
+  el.dataset.color = f.c1;
+  if (f.t === 'solid') delete el.dataset.fill; else el.dataset.fill = encFill(f);
+  if (el.tagName === 'IMG') refreshArt(el); else { el.style.color = f.c1; paintText(el); }
+}
+function applyFill(f) {
+  const t = $('ptarget').value;
+  if (t === 'bg') { $('bg').value = f.c1; $('bgfill').value = f.t === 'solid' ? '' : encFill(f); render(); return; }
+  if (!sel) { $('warn').textContent = '請先點選海報上的物件，再調顏色'; return; }
+  if (t === 'frame') {
+    if (!sel.classList.contains('text')) { $('warn').textContent = '文字框顏色只用在文字物件'; return; }
+    sel.style.setProperty('--fc', sel.dataset.fc = f.c1);
+    if (f.t === 'solid') { delete sel.dataset.ff; sel.style.removeProperty('--fg'); }
+    else { sel.dataset.ff = encFill(f); sel.style.setProperty('--fg', fillCss(f)); }
+    if (!sel.dataset.frame) { sel.dataset.frame = 'box'; $('frame').value = 'box'; }   // 還沒選框就先給色塊，不然看不到
+  } else setFill(sel, f);
+  save();
+}
+function curFill() {
+  const t = $('ptarget').value;
+  if (t === 'bg') return parseFill($('bgfill').value) || solid($('bg').value);
+  if (!sel) return null;
+  if (t === 'frame') return parseFill(sel.dataset.ff) || solid(sel.dataset.fc || '#ffd43b');
+  return parseFill(sel.dataset.fill) || solid(sel.dataset.color || '#000000');
+}
+let act = 'c1';   // 色碼欄與色票目前改的是哪一個顏色
+function syncHex() {
+  for (const k of ['c1', 'c2', 'c3']) $(k).classList.toggle('act', k === act);
+  if (document.activeElement !== $('hex')) $('hex').value = $(act).value;
+}
+function showType(t) {
+  if (t === 'solid' || (t !== 'three' && act === 'c3')) act = 'c1';
+  for (const n of $('colsec').querySelectorAll('[data-show]')) n.hidden = !n.dataset.show.split(' ').includes(t);
+  syncHex();
+}
+function setUI(f) {
+  $('ftype').value = f.t; $('fang').value = f.a; $('fmid').value = f.m;
+  // 純色時不動顏色2／中間色，切換成漸層才有上次的搭配可用
+  for (const k of f.t === 'solid' ? ['c1'] : ['c1', 'c2', 'c3']) if (HEX6.test(f[k])) $(k).value = f[k];
+  showType(f.t);
+}
+function loadFillUI() { const f = curFill(); if (f) setUI(f); }
+const readFill = () => ({ t: $('ftype').value, a: +$('fang').value, m: +$('fmid').value, c1: $('c1').value, c2: $('c2').value, c3: $('c3').value });
+for (const k of ['ftype', 'fang', 'fmid', 'c1', 'c2', 'c3']) $(k).addEventListener('input', () => { showType($('ftype').value); applyFill(readFill()); });
+for (const k of ['c1', 'c2', 'c3']) $(k).addEventListener('click', () => { act = k; syncHex(); });
+$('hex').oninput = e => {
+  const v = e.target.value.trim().replace(/^#?/, '#');
+  if (!HEX6.test(v)) return;
+  $(act).value = v.toLowerCase();
+  syncHex();
+  applyFill(readFill());
+};
+$('swap').onclick = () => { const c = $('c1').value; $('c1').value = $('c2').value; $('c2').value = c; syncHex(); applyFill(readFill()); };
+$('ptarget').onchange = loadFillUI;
+// 漸層範本
+const GPRE = {
+  粉嫩: 'linear|135|50|#ff9a9e|#fad0c4|#ffffff', 夕陽: 'linear|90|50|#f83600|#f9d423|#ffffff', 海洋: 'linear|135|50|#00c6fb|#005bea|#ffffff',
+  薄荷: 'linear|135|50|#43e97b|#38f9d7|#ffffff', 霓虹: 'linear|90|50|#fc00ff|#00dbde|#ffffff', 葡萄: 'linear|135|50|#7f00ff|#e100ff|#ffffff',
+  金屬金: 'three|180|50|#b8860b|#8a5a00|#fff3b0', 金屬銀: 'three|180|50|#8e9eab|#4b5563|#ffffff', 暖光放射: 'radial|0|35|#fff3bf|#f76707|#ffffff',
+  藍光放射: 'radial|0|45|#ffffff|#1864ab|#ffffff', 紅黑雙色: 'two|180|50|#e03131|#1a1a1a|#ffffff', 斜切雙色: 'two|135|50|#ffd43b|#1971c2|#ffffff',
+  彩虹: 'rainbow|90|50|#ff004c|#7a3cff|#ffffff',
+};
+for (const name in GPRE) {
+  const f = parseFill(GPRE[name]), b = document.createElement('button');
+  b.title = name;
+  b.style.background = fillCss(f);
+  b.onclick = () => { setUI(f); applyFill(f); };
+  $('gpre').append(b);
+}
 
 // 色票：蠟筆盒式的 12 色，24、36 色各往後多加 12 色；最後一格是透明
 const PAL = ('#e03131 #f76707 #ffd43b #94d82d #2f9e44 #4dabf7 #1864ab #7048e8 #f783ac #8d5524 #000000 #ffffff '
   + '#c92a2a #ff922b #fff3bf #d8f5a2 #087f5b #22b8cf #364fc7 #ae3ec9 #e64980 #d9a066 #868e96 #ffd8a8 '
   + '#800000 #e8590c #f59f00 #5c940d #0b7285 #a5d8ff #0b2a5b #d0bfff #862e9c #5c3a21 #343a40 #dee2e6').split(' ');
 function paint(v) {
-  const t = $('ptarget').value;
-  if (t === 'bg') { $('bg').value = v; render(); return; }
-  if (!sel) { $('warn').textContent = '請先點選海報上的物件，再點色票'; return; }
-  if (t === 'text') setColor(sel, v);
-  else sel.style.setProperty('--fc', sel.dataset.fc = v);
-  select(sel);
-  save();
+  if (v === 'transparent') { setUI(solid('#000000')); applyFill(solid('transparent')); return; }
+  $($('ftype').value === 'solid' ? 'c1' : act).value = v;
+  syncHex();
+  applyFill(readFill());
 }
 ($('pn').onchange = () => {
   $('pal').innerHTML = '';
@@ -634,6 +894,134 @@ function paint(v) {
     $('pal').append(b);
   }
 })();
+
+// ── 文字彎曲（文字藝術師式）：每個字包成 span，依它在該行的位置 t∈[-1,1] 算位移、旋轉、伸縮 ──
+// 弧形與圓形用「弧長不變」排在圓上，字距不會被拉開；回傳單位是 em，跟著字級等比
+const arc = (sign, full) => (t, k, hw) => {
+  const th = (full ? 2 : 1) * Math.PI * Math.max(k, .01), R = hw / (th / 2), phi = t * th / 2;
+  return { x: R * Math.sin(phi) - t * hw, y: sign * R * (1 - Math.cos(phi)), r: sign * phi * 180 / Math.PI };
+};
+const wave = n => (t, k, hw) => {
+  const A = k * .6, y = -A * Math.sin(n * Math.PI * t), d = -A * n * Math.PI * Math.cos(n * Math.PI * t) / hw;
+  return { y, r: Math.atan(d) * 180 / Math.PI };
+};
+const WARPS = {
+  arcUp: arc(1), arcDown: arc(-1), circle: arc(1, true), wave: wave(1), wave2: wave(2),
+  bulge: (t, k) => ({ s: 1 + 1.2 * k * (1 - t * t) }),
+  pinch: (t, k) => ({ s: 1 - .6 * k * (1 - t * t) }),
+  grow: (t, k) => ({ s: 1 + 1.5 * k * (t + 1) / 2, base: 1 }),
+  shrink: (t, k) => ({ s: 1 + 1.5 * k * (1 - t) / 2, base: 1 }),
+};
+const span = (cls, s) => { const k = document.createElement('span'); k.className = cls; k.textContent = s; return k; };
+function paintText(el) {
+  if (!el.classList.contains('text') || el.isContentEditable) return;
+  const s = el.textContent, f = parseFill(el.dataset.fill), css = f && f.t !== 'solid' ? fillCss(f) : '', wf = WARPS[el.dataset.warp];
+  if (!css && !wf) { if (el.childElementCount) el.textContent = s; return; }
+  el.textContent = '';
+  if (!wf) { const k = span('ink', s); k.style.backgroundImage = css; el.append(k); return; }
+  const rows = s.split('\n').map((ln, i) => {
+    if (i) el.append('\n');
+    return [...ln].map(c => el.appendChild(span('ch', c)));
+  });
+  const fs = parseFloat(getComputedStyle(el).fontSize) || 16, vert = !!el.style.writingMode, k = (+(el.dataset.wa ?? 50) || 0) / 100;
+  for (const row of rows) {
+    if (!row.length) continue;
+    const lo = k0 => vert ? k0.offsetTop : k0.offsetLeft, len = k0 => vert ? k0.offsetHeight : k0.offsetWidth;
+    const a = Math.min(...row.map(lo)), b = Math.max(...row.map(k0 => lo(k0) + len(k0))), mid = (a + b) / 2, hw = Math.max((b - a) / 2, 1);
+    for (const ch of row) {
+      const o = wf((lo(ch) + len(ch) / 2 - mid) / hw, k, hw / fs);
+      let dx = o.x || 0, dy = o.y || 0;
+      if (vert) [dx, dy] = [-dy, dx];   // 直書：整套座標轉 90°
+      ch.style.transform = `translate(${dx.toFixed(3)}em,${dy.toFixed(3)}em) rotate(${(o.r || 0).toFixed(2)}deg)` + (o.s ? ` ${vert ? 'scaleX' : 'scaleY'}(${o.s.toFixed(3)})` : '');
+      if (o.base) ch.style.transformOrigin = vert ? '0 50%' : '50% 100%';
+    }
+  }
+  // 彎曲＋漸層：每個字各自畫背景，但尺寸與位移對齊整個文字框，看起來是同一道漸層
+  if (css) {
+    const W = el.clientWidth / fs, H = el.clientHeight / fs;
+    for (const ch of el.querySelectorAll('.ch')) {
+      ch.classList.add('ink');
+      ch.style.backgroundImage = css;
+      ch.style.backgroundSize = `${W.toFixed(3)}em ${H.toFixed(3)}em`;
+      ch.style.backgroundPosition = `${(-ch.offsetLeft / fs).toFixed(3)}em ${(-ch.offsetTop / fs).toFixed(3)}em`;
+    }
+  }
+}
+document.fonts?.ready.then(() => { poster.querySelectorAll('.text[data-warp]').forEach(paintText); mark(); });
+
+// ── 變形面板 ──
+for (const k of ['kx', 'ky', 'px', 'py']) prop(k, (el, i) => { el.dataset[k] = i.value; applyTf(el); });
+for (const k of ['sx', 'sy']) prop(k, (el, i) => { el.dataset[k] = (tfv(el, k) < 0 ? -1 : 1) * i.value / 100; applyTf(el); });
+prop('warp', (el, i) => i.value ? el.dataset.warp = i.value : delete el.dataset.warp);
+prop('wa', (el, i) => el.dataset.wa = i.value);
+const flip = k => () => { if (!sel) return; sel.dataset[k] = -tfv(sel, k); applyTf(sel); save(); };
+$('flipH').onclick = flip('sx');
+$('flipV').onclick = flip('sy');
+$('tfreset').onclick = () => {
+  if (!sel) return;
+  for (const k in TF) delete sel.dataset[k];
+  sel.style.rotate = '';
+  applyTf(sel);
+  select(sel);
+  save();
+};
+
+// ── 選取框控制點：四角等比縮放（以中心為準）、四邊拉伸（對邊固定）、圓點旋轉 ──
+$('selbox').addEventListener('pointerdown', e => {
+  const h = e.target.dataset?.h, el = sel;
+  if (!h || !el) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const P = poster.getBoundingClientRect(), PW = poster.clientWidth, PH = poster.clientHeight;
+  const W = el.offsetWidth, H = el.offsetHeight, cx = el.offsetLeft + W / 2, cy = el.offsetTop + H / 2;
+  const C = { x: P.left + cx, y: P.top + cy }, r = (parseFloat(el.style.rotate) || 0) * Math.PI / 180;
+  // 物件中心放回 (x, y)（海報座標 px）；left/top 以 % 存
+  const centerAt = (x, y) => { el.style.left = (x - el.offsetWidth / 2) / PW * 100 + '%'; el.style.top = (y - el.offsetHeight / 2) / PH * 100 + '%'; };
+  let move;
+  if (h === 'rot') move = ev => {
+    let a = Math.atan2(ev.clientY - C.y, ev.clientX - C.x) * 180 / Math.PI + 90;
+    if (ev.shiftKey) a = Math.round(a / 15) * 15;
+    a = Math.round(((a % 360) + 540) % 360 - 180);
+    el.style.rotate = a ? a + 'deg' : '';
+  };
+  else if (h.length === 2) {
+    const img = el.tagName === 'IMG', s0 = parseFloat(img ? el.style.width : el.style.fontSize) || 10;
+    const d0 = Math.max(Math.hypot(e.clientX - C.x, e.clientY - C.y), 1);
+    move = ev => {
+      const s = clamp(s0 * Math.hypot(ev.clientX - C.x, ev.clientY - C.y) / d0, .5, 400);
+      if (img) { el.style.width = s + '%'; el.style.height = el.style.objectFit = ''; } else el.style.fontSize = s + 'cqw';
+      centerAt(cx, cy);
+      if (!img) paintText(el);
+    };
+  } else {
+    const horiz = h === 'e' || h === 'w', key = horiz ? 'sx' : 'sy', base = horiz ? W : H;
+    const sgn = tfv(el, key) < 0 ? -1 : 1, ext0 = base * Math.abs(tfv(el, key));
+    // 往外拉的方向（已含旋轉）；對邊 A 固定不動
+    const u = { e: [Math.cos(r), Math.sin(r)], w: [-Math.cos(r), -Math.sin(r)], s: [-Math.sin(r), Math.cos(r)], n: [Math.sin(r), -Math.cos(r)] }[h];
+    const A = { x: cx - u[0] * ext0 / 2, y: cy - u[1] * ext0 / 2 };
+    move = ev => {
+      const ext = Math.max(4, (ev.clientX - P.left - A.x) * u[0] + (ev.clientY - P.top - A.y) * u[1]);
+      el.dataset[key] = +(sgn * ext / base).toFixed(4);
+      applyTf(el);
+      centerAt(A.x + u[0] * ext / 2, A.y + u[1] * ext / 2);
+    };
+  }
+  const mv = ev => { move(ev); mark(); };
+  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); select(el); save(); };
+  addEventListener('pointermove', mv);
+  addEventListener('pointerup', up);
+});
+
+// ── 面板位置：左／上／右，記在這台瀏覽器 ──
+function setPP(p) {
+  document.body.dataset.pp = p;
+  for (const b of document.querySelectorAll('.seg button')) b.classList.toggle('on', b.dataset.pp === p);
+  try { localStorage.panelPos = p; } catch {}
+  render();
+}
+for (const b of document.querySelectorAll('.seg button')) b.onclick = () => setPP(b.dataset.pp);
+document.body.dataset.pp = (() => { try { return localStorage.panelPos; } catch {} })() || 'left';
+for (const b of document.querySelectorAll('.seg button')) b.classList.toggle('on', b.dataset.pp === document.body.dataset.pp);
 
 // ponytail: 用色彩增值讓白色「看起來」透明，零運算；深色底上線條會跟著變暗，那時才需要真的去背
 prop('mul', (el, i) => el.style.mixBlendMode = i.checked ? 'multiply' : '');
@@ -652,7 +1040,6 @@ poster.addEventListener('load', mark, true);   // 圖片載入後才有尺寸
   root.setProperty('--heart', poly(h.map(([x, y]) => [50 + x / 32 * 100, (y - y0) / yh * 100])));
 }
 prop('frame',(el, i) => i.value ? el.dataset.frame = i.value : delete el.dataset.frame);
-prop('fcol', (el, i) => el.style.setProperty('--fc', el.dataset.fc = i.value));
 document.documentElement.style.setProperty('--burst', `polygon(${[...Array(32)].map((_, i) => {
   const a = i * Math.PI / 16, r = i % 2 ? 38 : 50;
   return `${(50 + r * Math.cos(a)).toFixed(1)}% ${(50 + r * Math.sin(a)).toFixed(1)}%`;
@@ -662,6 +1049,18 @@ $('back').onclick = () => { poster.prepend(sel); save(); };
 $('del').onclick = () => { sel.remove(); select(null); save(); };
 $('clear').onclick = () => { if (confirm('確定清空整張海報？')) { poster.innerHTML = ''; select(null); save(); } };
 
+function undo() {
+  if (!hist.length) return;
+  restoring = true;
+  load(JSON.parse(hist.pop()));
+  render();
+  restoring = false;
+  lastPush = 0;
+}
+$('undo').onclick = undo;
+addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !sel?.isContentEditable && !/INPUT|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); }
+});
 addEventListener('keydown', e => {
   if ((e.key === 'Delete' || e.key === 'Backspace') && sel && !sel.isContentEditable
       && !/INPUT|SELECT/.test(document.activeElement.tagName)) $('del').onclick();
